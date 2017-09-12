@@ -1,15 +1,13 @@
 {
     "compilerOptions": {
         "lib": [
-            "es2015.core",
-            "es2015.promise",
-            "es5"
+            "es2016"
         ],
         "outDir": "./build/",
         "sourceMap": true,
         "noImplicitAny": true,
         "module": "commonjs",
-        "target": "es5",
+        "target": "es2016",
         "newLine": "LF",
         "allowJs": true,
         "noUnusedLocals": true,
