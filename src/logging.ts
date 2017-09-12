@@ -2,6 +2,9 @@ import * as fs from "fs";
 import { inspect } from "util";
 
 import * as chalk from "chalk";
+import { MessageType } from "vscode-languageserver";
+
+import { LanguageClient } from "./language-client";
 
 export interface Logger {
     log(...values: any[]): void;
@@ -16,6 +19,49 @@ export interface Logger {
 function format(values: any[]): string {
     return values.map(value => typeof value === "string" ? value : inspect(value, { depth: Infinity })).join(" ");
 }
+
+/**
+ * A logger implementation that sends window/logMessage notifications to an LSP client
+ */
+export class LSPLogger implements Logger {
+    /**
+	 * @param client The client to send window/logMessage notifications to
+	 */
+    constructor(private client: LanguageClient) { }
+
+    log(...values: any[]): void {
+        try {
+            this.client.windowLogMessage({ type: MessageType.Log, message: format(values) });
+        } catch (err) {
+            // ignore
+        }
+    }
+
+    info(...values: any[]): void {
+        try {
+            this.client.windowLogMessage({ type: MessageType.Info, message: format(values) });
+        } catch (err) {
+            // ignore
+        }
+    }
+
+    warn(...values: any[]): void {
+        try {
+            this.client.windowLogMessage({ type: MessageType.Warning, message: format(values) });
+        } catch (err) {
+            // ignore
+        }
+    }
+
+    error(...values: any[]): void {
+        try {
+            this.client.windowLogMessage({ type: MessageType.Error, message: format(values) });
+        } catch (err) {
+            // ignore
+        }
+    }
+}
+
 
 /**
  * Logging implementation that writes to an arbitrary NodeJS stream

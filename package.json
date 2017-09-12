@@ -47,6 +47,8 @@
   "dependencies": {
     "@types/chalk": "^0.4.31",
     "chalk": "^2.1.0",
-    "commander": "^2.11.0"
+    "commander": "^2.11.0",
+    "vscode-languageserver": "^3.4.2",
+    "vscode-languageserver-types": "^3.4.0"
   }
 }
