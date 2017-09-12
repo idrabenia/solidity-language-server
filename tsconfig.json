@@ -1,0 +1,25 @@
+{
+    "compilerOptions": {
+        "lib": [
+            "es2015.core",
+            "es2015.promise",
+            "es5"
+        ],
+        "outDir": "./build/",
+        "sourceMap": true,
+        "noImplicitAny": true,
+        "module": "commonjs",
+        "target": "es5",
+        "newLine": "LF",
+        "allowJs": true,
+        "noUnusedLocals": true,
+        "noUnusedParameters": true,
+        "strictNullChecks": true
+    },
+    // If a segment of a glob pattern includes only * or .*,
+    // then only files with supported extensions are included
+    // (e.g. .ts, .tsx, and .d.ts by default with .js and .jsx if allowJs is set to true).
+    "include": [
+        "./src/**/*"
+    ]
+}
