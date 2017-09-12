@@ -1,0 +1,9 @@
+{
+  "name": "solidity-language-server",
+  "version": "0.1.0",
+  "description": "A language server for Solidity language",
+  "main": "index.js",
+  "repository": "git@github.com:kodebox-io/solidity-language-server.git",
+  "author": "Kwang Yul Seo <kseo@kodebox.io>",
+  "license": "MIT"
+}
