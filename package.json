@@ -6,8 +6,39 @@
   "repository": "git@github.com:kodebox-io/solidity-language-server.git",
   "author": "Kwang Yul Seo <kseo@kodebox.io>",
   "license": "MIT",
+  "scripts": {
+    "test": "jest --env node"
+  },
+  "jest": {
+    "transform": {
+      "^.+\\.tsx?$": "<rootDir>/node_modules/ts-jest/preprocessor.js"
+    },
+    "testRegex": "(/__tests__/.*|\\.(test|spec))\\.(tsx?|jsx?)$",
+    "moduleFileExtensions": [
+      "ts",
+      "tsx",
+      "js",
+      "json",
+      "jsx"
+    ]
+  },
   "devDependencies": {
+    "import-sort-cli": "^3.3.0",
+    "import-sort-parser-babylon": "^3.2.0",
+    "import-sort-parser-typescript": "^3.2.0",
+    "import-sort-style-module": "^3.0.0",
+    "jest": "^21.0.2",
     "tslint": "^5.7.0",
     "typescript": "^2.5.2"
+  },
+  "importSort": {
+    ".js, .jsx, .es6, .es": {
+      "parser": "babylon",
+      "style": "module"
+    },
+    ".ts, .tsx": {
+      "parser": "typescript",
+      "style": "module"
+    }
   }
 }
