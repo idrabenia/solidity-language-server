@@ -44,5 +44,7 @@
       "style": "module"
     }
   },
-  "dependencies": {}
+  "dependencies": {
+    "commander": "^2.11.0"
+  }
 }
