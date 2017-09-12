@@ -5,5 +5,8 @@
   "main": "index.js",
   "repository": "git@github.com:kodebox-io/solidity-language-server.git",
   "author": "Kwang Yul Seo <kseo@kodebox.io>",
-  "license": "MIT"
+  "license": "MIT",
+  "devDependencies": {
+    "tslint": "^5.7.0"
+  }
 }
