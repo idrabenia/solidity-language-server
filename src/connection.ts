@@ -1,8 +1,9 @@
 import { EventEmitter } from "events";
 
-import { Message, StreamMessageReader as VSCodeStreamMessageReader } from "vscode-jsonrpc";
+import { Message, StreamMessageReader as VSCodeStreamMessageReader, StreamMessageWriter as VSCodeStreamMessageWriter } from "vscode-jsonrpc";
+import { NotificationMessage, RequestMessage, ResponseMessage } from "vscode-jsonrpc/lib/messages";
 
-import { Logger } from "./logging";
+import { Logger, NoopLogger } from "./logging";
 
 export interface MessageLogOptions {
     /** Logger to use */
@@ -61,5 +62,39 @@ export class MessageEmitter extends EventEmitter {
     /* istanbul ignore next */
     once(event: string, listener: (...args: any[]) => void): this {
         return super.on(event, listener);
+    }
+}
+
+/**
+ * Wraps vscode-jsonrpcs StreamMessageWriter to support logging messages,
+ * decouple our code from the vscode-jsonrpc module and provide a more
+ * consistent event API
+ */
+export class MessageWriter {
+    private logger: Logger;
+    private logMessages: boolean;
+    private vscodeWriter: VSCodeStreamMessageWriter;
+
+    /**
+     * @param output The output stream to write to (e.g. STDOUT or a socket)
+     * @param options
+     */
+    constructor(output: NodeJS.WritableStream, options: MessageLogOptions = {}) {
+        this.vscodeWriter = new VSCodeStreamMessageWriter(output);
+        this.logger = options.logger || new NoopLogger();
+        this.logMessages = !!options.logMessages;
+    }
+
+    /**
+     * Writes a JSON RPC message to the output stream.
+     * Logs it if configured
+     *
+     * @param message A complete JSON RPC message object
+     */
+    write(message: RequestMessage | NotificationMessage | ResponseMessage): void {
+        if (this.logMessages) {
+            this.logger.log("<--", message);
+        }
+        this.vscodeWriter.write(message);
     }
 }
