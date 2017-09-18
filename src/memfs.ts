@@ -1,5 +1,6 @@
 import { EventEmitter } from "events";
 
+import { Logger, NoopLogger } from "./logging";
 import { path2uri, uri2path } from "./util";
 
 /**
@@ -38,7 +39,7 @@ export class InMemoryFileSystem extends EventEmitter {
      */
     rootNode: FileSystemNode;
 
-    constructor(path: string) {
+    constructor(path: string, private logger: Logger = new NoopLogger()) {
         super();
         this.path = path;
         this.overlay = new Map<string, string>();
@@ -134,6 +135,7 @@ export class InMemoryFileSystem extends EventEmitter {
     readFile(path: string): string {
         const content = this.readFileIfExists(path);
         if (content === undefined) {
+            this.logger.warn(`readFile ${path} requested by Solidity but content not available`);
             return "";
         }
         return content;
@@ -185,5 +187,9 @@ export class InMemoryFileSystem extends EventEmitter {
 	 */
     didChange(uri: string, text: string) {
         this.overlay.set(uri, text);
+    }
+
+    trace(message: string) {
+        this.logger.log(message);
     }
 }
