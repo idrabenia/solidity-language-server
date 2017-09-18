@@ -25,8 +25,8 @@ function format(values: any[]): string {
  */
 export class LSPLogger implements Logger {
     /**
-	 * @param client The client to send window/logMessage notifications to
-	 */
+     * @param client The client to send window/logMessage notifications to
+     */
     constructor(private client: LanguageClient) { }
 
     log(...values: any[]): void {
@@ -124,8 +124,8 @@ export class StderrLogger extends StreamLogger {
  */
 export class FileLogger extends StreamLogger {
     /**
-	 * @param file Path to the logfile
-	 */
+     * @param file Path to the logfile
+     */
     constructor(file: string) {
         const stream = fs.createWriteStream(file);
         super(stream, stream);

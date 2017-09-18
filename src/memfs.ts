@@ -61,11 +61,11 @@ export class InMemoryFileSystem extends EventEmitter {
     }
 
     /**
-	 * Adds a file to the local cache
-	 *
-	 * @param uri The URI of the file
-	 * @param content The optional content
-	 */
+     * Adds a file to the local cache
+     *
+     * @param uri The URI of the file
+     * @param content The optional content
+     */
     add(uri: string, content?: string): void {
         // Make sure not to override existing content with undefined
         if (content !== undefined || !this.files.has(uri)) {
@@ -182,9 +182,9 @@ export class InMemoryFileSystem extends EventEmitter {
     }
 
     /**
-	 * Updates temporary content denoted by the given URI
-	 * @param uri file's URI
-	 */
+     * Updates temporary content denoted by the given URI
+     * @param uri file's URI
+     */
     didChange(uri: string, text: string) {
         this.overlay.set(uri, text);
     }
