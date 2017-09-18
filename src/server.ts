@@ -1,6 +1,9 @@
 import * as cluster from "cluster";
+import * as net from "net";
 
-import { MessageLogOptions } from "./connection";
+import { isNotificationMessage } from "vscode-jsonrpc/lib/messages";
+
+import { MessageEmitter, MessageLogOptions } from "./connection";
 import { Logger, PrefixedLogger, StdioLogger } from "./logging";
 
 /**
@@ -42,6 +45,25 @@ export function serve(options: ServeOptions) {
             cluster.fork();
         }
     } else {
-        logger.info(`Listening for incoming LSP connections on ${options.lspPort}`);
+        let counter = 1;
+        const server = net.createServer(socket => {
+            const id = counter++;
+            logger.log(`Connection ${id} accepted`);
+
+            const messageEmitter = new MessageEmitter(socket as NodeJS.ReadableStream, options);
+
+            // Add exit notification handler to close the socket on exit
+            messageEmitter.on("message", message => {
+                if (isNotificationMessage(message) && message.method === "exit") {
+                    socket.end();
+                    socket.destroy();
+                    logger.log(`Connection ${id} closed (exit notification)`);
+                }
+            });
+        });
+
+        server.listen(options.lspPort, () => {
+            logger.info(`Listening for incoming LSP connections on ${options.lspPort}`);
+        });
     }
 }
