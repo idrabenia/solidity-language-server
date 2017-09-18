@@ -3,7 +3,8 @@ import * as net from "net";
 
 import { isNotificationMessage } from "vscode-jsonrpc/lib/messages";
 
-import { MessageEmitter, MessageLogOptions } from "./connection";
+import { MessageEmitter, MessageLogOptions, MessageWriter } from "./connection";
+import { RemoteLanguageClient } from "./language-client";
 import { Logger, PrefixedLogger, StdioLogger } from "./logging";
 
 /**
@@ -51,6 +52,8 @@ export function serve(options: ServeOptions) {
             logger.log(`Connection ${id} accepted`);
 
             const messageEmitter = new MessageEmitter(socket as NodeJS.ReadableStream, options);
+            const messageWriter = new MessageWriter(socket, options);
+            const remoteClient = new RemoteLanguageClient(messageWriter);
 
             // Add exit notification handler to close the socket on exit
             messageEmitter.on("message", message => {
@@ -60,6 +63,9 @@ export function serve(options: ServeOptions) {
                     logger.log(`Connection ${id} closed (exit notification)`);
                 }
             });
+
+            // FIXME: Use remoteClient.
+            remoteClient;
         });
 
         server.listen(options.lspPort, () => {
