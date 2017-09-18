@@ -7,6 +7,7 @@
   "author": "Kwang Yul Seo <kseo@kodebox.io>",
   "license": "MIT",
   "scripts": {
+    "dev": "./node_modules/.bin/nodemon src/language-server.ts",
     "test": "jest --env node"
   },
   "jest": {
@@ -48,6 +49,7 @@
     "@types/chalk": "^0.4.31",
     "chalk": "^2.1.0",
     "commander": "^2.11.0",
+    "nodemon": "^1.12.1",
     "vscode-languageserver": "^3.4.2",
     "vscode-languageserver-types": "^3.4.0"
   }
