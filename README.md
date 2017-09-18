@@ -1,6 +1,8 @@
 Solidity Language Server
 ========================
 
+Warning: Solidity Language Server is at a very early stage of development, use at your own risk.
+
 Solidity Language Server provides a server that runs in the background, providing IDEs, editors and other tools with information about Solidity smart contracts. It supports functionality such as 'goto definition', symbol search, reformatting, and code completion, and enables renaming and refactorings.
 
 Solidity Language Server makes use of [Solium][Solium].
