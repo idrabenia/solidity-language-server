@@ -45,3 +45,20 @@ export function path2uri(path: string): string {
 
     return `file://${head}/${parts.map(encodeURIComponent).join("/")}`;
 }
+
+/**
+ * Normalizes URI encoding by encoding _all_ special characters in the pathname
+ */
+export function normalizeUri(uri: string): string {
+    const parts = url.parse(uri);
+    if (!parts.pathname) {
+        return uri;
+    }
+    const pathParts = parts.pathname.split("/").map(segment => encodeURIComponent(decodeURIComponent(segment)));
+    // Decode Windows drive letter colon
+    if (/^[a-z]%3A$/i.test(pathParts[1])) {
+        pathParts[1] = decodeURIComponent(pathParts[1]);
+    }
+    parts.pathname = pathParts.join("/");
+    return url.format(parts);
+}
