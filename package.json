@@ -46,9 +46,13 @@
     }
   },
   "dependencies": {
+    "@reactivex/rxjs": "^5.4.3",
     "@types/chalk": "^0.4.31",
+    "@types/lodash": "^4.14.74",
     "chalk": "^2.1.0",
     "commander": "^2.11.0",
+    "fast-json-patch": "^2.0.5",
+    "lodash": "^4.17.4",
     "nodemon": "^1.12.1",
     "vscode-languageserver": "^3.4.2",
     "vscode-languageserver-types": "^3.4.0"

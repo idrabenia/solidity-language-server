@@ -1,3 +1,5 @@
+import { Observable } from "@reactivex/rxjs";
+import { Operation } from "fast-json-patch";
 import {
     DidChangeTextDocumentParams,
     DidCloseTextDocumentParams,
@@ -56,6 +58,17 @@ export class SolidityService {
 
     protected _initializeFileSystems(): void {
         this.inMemoryFileSystem = new InMemoryFileSystem(this.root, this.logger);
+    }
+
+    /**
+     * The shutdown request is sent from the client to the server. It asks the server to shut down,
+     * but to not exit (otherwise the response might not be delivered correctly to the client).
+     * There is a separate exit notification that asks the server to exit.
+     *
+     * @return Observable of JSON Patches that build a `null` result
+     */
+    shutdown(_params = {}): Observable<Operation> {
+        return Observable.of({ op: "add", path: "", value: null } as Operation);
     }
 
     /**

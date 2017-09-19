@@ -3,9 +3,10 @@ import * as net from "net";
 
 import { isNotificationMessage } from "vscode-jsonrpc/lib/messages";
 
-import { MessageEmitter, MessageLogOptions, MessageWriter } from "./connection";
+import { MessageEmitter, MessageLogOptions, MessageWriter, registerLanguageHandler } from "./connection";
 import { RemoteLanguageClient } from "./language-client";
 import { Logger, PrefixedLogger, StdioLogger } from "./logging";
+import { SolidityService } from "./solidity-service";
 
 /**
  * Creates a Logger prefixed with master or worker ID
@@ -30,8 +31,9 @@ export interface ServeOptions extends MessageLogOptions {
  * Crashing workers are restarted automatically.
  *
  * @param options
+ * @param createLangHandler Factory function that is called for each new connection
  */
-export function serve(options: ServeOptions) {
+export function serve(options: ServeOptions, createLangHandler = (remoteClient: RemoteLanguageClient) => new SolidityService(remoteClient)): void {
     const logger = options.logger || createClusterLogger();
     if (options.clusterSize > 1 && cluster.isMaster) {
         logger.log(`Spawning ${options.clusterSize} workers`);
@@ -64,8 +66,7 @@ export function serve(options: ServeOptions) {
                 }
             });
 
-            // FIXME: Use remoteClient.
-            remoteClient;
+            registerLanguageHandler(messageEmitter, messageWriter, createLangHandler(remoteClient), options);
         });
 
         server.listen(options.lspPort, () => {
