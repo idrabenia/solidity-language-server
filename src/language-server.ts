@@ -1,4 +1,6 @@
+import { FileLogger, StdioLogger } from "./logging";
 import { ServeOptions, serve } from "./server";
+
 const program = require("commander");
 
 const numCPUs = require("os").cpus().length;
@@ -9,11 +11,13 @@ program
     .version(packageJson.version)
     .option("-p, --port [port]', 'specifies LSP port to use (" + defaultLspPort + ")", parseInt)
     .option("-c, --cluster [num]", "number of concurrent cluster workers (defaults to number of CPUs, " + numCPUs + ")", parseInt)
+    .option("-l, --logfile [file]", "log to this file")
     .parse(process.argv);
 
 const options: ServeOptions = {
     clusterSize: program.cluster || numCPUs,
-    lspPort: program.port || defaultLspPort
+    lspPort: program.port || defaultLspPort,
+    logger: program.logfile ? new FileLogger(program.logfile) : new StdioLogger(),
 };
 
 serve(options);
