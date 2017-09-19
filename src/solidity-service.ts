@@ -14,6 +14,9 @@ import { InMemoryFileSystem } from "./memfs";
 import { ProjectManager } from "./project-manager";
 import { normalizeUri, path2uri, uri2path } from "./util";
 
+export interface SolidityServiceOptions {
+}
+
 export class SolidityService {
     projectManager: ProjectManager;
 
@@ -34,7 +37,7 @@ export class SolidityService {
      */
     protected inMemoryFileSystem: InMemoryFileSystem;
 
-    constructor(protected client: LanguageClient) {
+    constructor(protected client: LanguageClient, protected options: SolidityServiceOptions = {}) {
         this.logger = new LSPLogger(client);
     }
 

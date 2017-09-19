@@ -1,5 +1,6 @@
 import { FileLogger, StdioLogger } from "./logging";
 import { ServeOptions, serve } from "./server";
+import { SolidityService, SolidityServiceOptions } from "./solidity-service";
 
 const program = require("commander");
 
@@ -14,10 +15,10 @@ program
     .option("-l, --logfile [file]", "log to this file")
     .parse(process.argv);
 
-const options: ServeOptions = {
+const options: ServeOptions & SolidityServiceOptions = {
     clusterSize: program.cluster || numCPUs,
     lspPort: program.port || defaultLspPort,
     logger: program.logfile ? new FileLogger(program.logfile) : new StdioLogger(),
 };
 
-serve(options);
+serve(options, client => new SolidityService(client, options));
