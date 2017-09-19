@@ -58,7 +58,6 @@ export class SolidityService {
         this.inMemoryFileSystem = new InMemoryFileSystem(this.root, this.logger);
     }
 
-
     /**
      * The document open notification is sent from the client to the server to signal newly opened
      * text documents. The document's truth is now managed by the client and the server must not try
@@ -68,8 +67,9 @@ export class SolidityService {
         const uri = normalizeUri(params.textDocument.uri);
         // Ensure files needed for most operations are fetched
         this.projectManager.didOpen(uri, params.textDocument.text);
+        await new Promise(resolve => setTimeout(resolve, 200));
+        this._publishDiagnostics(uri);
     }
-
 
     /**
      * The document change notification is sent from the client to the server to signal changes to a
@@ -89,6 +89,8 @@ export class SolidityService {
             return;
         }
         this.projectManager.didChange(uri, text);
+        await new Promise(resolve => setTimeout(resolve, 200));
+        this._publishDiagnostics(uri);
     }
 
     /**
@@ -113,5 +115,14 @@ export class SolidityService {
 
         // Clear diagnostics
         this.client.textDocumentPublishDiagnostics({ uri, diagnostics: [] });
+    }
+
+    /**
+     * Generates and publishes diagnostics for a given file
+     *
+     * @param uri URI of the file to check
+     */
+    private _publishDiagnostics(_uri: string): void {
+        // FIXME: Implement.
     }
 }
