@@ -5,7 +5,9 @@ import {
     DidCloseTextDocumentParams,
     DidOpenTextDocumentParams,
     DidSaveTextDocumentParams,
-    InitializeParams
+    InitializeParams,
+    InitializeResult,
+    TextDocumentSyncKind
 } from "vscode-languageserver";
 
 import { LanguageClient } from "./language-client";
@@ -41,7 +43,7 @@ export class SolidityService {
         this.logger = new LSPLogger(client);
     }
 
-    initialize(params: InitializeParams) {
+    initialize(params: InitializeParams): Observable<Operation> {
         if (params.rootUri || params.rootPath) {
             this.root = params.rootPath || uri2path(params.rootUri!);
             this.rootUri = params.rootUri || path2uri(params.rootPath!);
@@ -57,6 +59,34 @@ export class SolidityService {
                 this.logger
             );
         }
+        const result: InitializeResult = {
+            capabilities: {
+                // Tell the client that the server works in FULL text document sync mode
+                textDocumentSync: TextDocumentSyncKind.Full,
+                hoverProvider: true,
+                signatureHelpProvider: {
+                    triggerCharacters: ["(", ","]
+                },
+                definitionProvider: true,
+                referencesProvider: true,
+                documentSymbolProvider: true,
+                workspaceSymbolProvider: true,
+                completionProvider: {
+                    resolveProvider: true,
+                    triggerCharacters: ["."]
+                },
+                codeActionProvider: true,
+                renameProvider: true,
+                executeCommandProvider: {
+                    commands: []
+                }
+            }
+        };
+        return Observable.of({
+            op: "add",
+            path: "",
+            value: result
+        } as Operation);
     }
 
     protected _initializeFileSystems(): void {
