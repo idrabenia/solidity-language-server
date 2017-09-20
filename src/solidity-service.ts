@@ -1,6 +1,8 @@
 import { Observable } from "@reactivex/rxjs";
 import { Operation } from "fast-json-patch";
+import * as _ from "lodash";
 import {
+    DidChangeConfigurationParams,
     DidChangeTextDocumentParams,
     DidCloseTextDocumentParams,
     DidOpenTextDocumentParams,
@@ -17,6 +19,13 @@ import { ProjectManager } from "./project-manager";
 import { normalizeUri, path2uri, uri2path } from "./util";
 
 export interface SolidityServiceOptions {
+}
+
+/**
+ * Settings synced through `didChangeConfiguration`
+ */
+export interface Settings {
+    soliumRules: any;
 }
 
 export class SolidityService {
@@ -38,6 +47,31 @@ export class SolidityService {
      * Holds file contents and workspace structure in memory
      */
     protected inMemoryFileSystem: InMemoryFileSystem;
+
+    /**
+     * Settings synced though `didChangeConfiguration`
+     */
+    protected settings: Settings = {
+        soliumRules: {
+            "array-declarations": true,
+            "blank-lines": false,
+            "camelcase": true,
+            "deprecated-suicide": true,
+            "double-quotes": true,
+            "imports-on-top": true,
+            "indentation": false,
+            "lbrace": true,
+            "mixedcase": true,
+            "no-empty-blocks": true,
+            "no-unused-vars": true,
+            "no-with": true,
+            "operator-whitespace": true,
+            "pragma-on-top": true,
+            "uppercase": true,
+            "variable-declarations": true,
+            "whitespace": true
+        }
+    };
 
     constructor(protected client: LanguageClient, protected options: SolidityServiceOptions = {}) {
         this.logger = new LSPLogger(client);
@@ -102,6 +136,14 @@ export class SolidityService {
      */
     shutdown(_params = {}): Observable<Operation> {
         return Observable.of({ op: "add", path: "", value: null } as Operation);
+    }
+
+    /**
+     * A notification sent from the client to the server to signal the change of configuration
+     * settings.
+     */
+    didChangeConfiguration(params: DidChangeConfigurationParams): void {
+        _.merge(this.settings, params.settings);
     }
 
     /**
