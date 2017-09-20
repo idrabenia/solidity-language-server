@@ -54,6 +54,7 @@
     "fast-json-patch": "^2.0.5",
     "lodash": "^4.17.4",
     "nodemon": "^1.12.1",
+    "solium": "^0.5.5",
     "vscode-languageserver": "^3.4.2",
     "vscode-languageserver-types": "^3.4.0"
   }
