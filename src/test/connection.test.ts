@@ -1,4 +1,5 @@
 import { EventEmitter } from "events";
+import { PassThrough } from "stream";
 
 import * as sinon from "sinon";
 import { ErrorCodes } from "vscode-jsonrpc";
@@ -59,6 +60,40 @@ describe("connection", () => {
             registerLanguageHandler(emitter as MessageEmitter, writer as any, handler as any, { logger });
             emitter.emit("message", { jsonrpc: "2.0", id: 1 });
             sinon.assert.calledOnce(logger.error);
+        });
+    });
+    describe("MessageEmitter", () => {
+        test("should log messages if enabled", async () => {
+            const logger = new NoopLogger() as NoopLogger & { log: sinon.SinonStub };
+            sinon.stub(logger, "log");
+            const emitter = new MessageEmitter(new PassThrough(), { logMessages: true, logger });
+            emitter.emit("message", { jsonrpc: "2.0", method: "whatever" });
+            sinon.assert.calledOnce(logger.log);
+            sinon.assert.calledWith(logger.log, "-->");
+        });
+        test("should not log messages if disabled", async () => {
+            const logger = new NoopLogger() as NoopLogger & { log: sinon.SinonStub };
+            sinon.stub(logger, "log");
+            const emitter = new MessageEmitter(new PassThrough(), { logMessages: false, logger });
+            emitter.emit("message", { jsonrpc: "2.0", method: "whatever" });
+            sinon.assert.notCalled(logger.log);
+        });
+    });
+    describe("MessageWriter", () => {
+        test("should log messages if enabled", async () => {
+            const logger = new NoopLogger() as NoopLogger & { log: sinon.SinonStub };
+            sinon.stub(logger, "log");
+            const writer = new MessageWriter(new PassThrough(), { logMessages: true, logger });
+            writer.write({ jsonrpc: "2.0", method: "whatever" });
+            sinon.assert.calledOnce(logger.log);
+            sinon.assert.calledWith(logger.log, "<--");
+        });
+        test("should not log messages if disabled", async () => {
+            const logger = new NoopLogger() as NoopLogger & { log: sinon.SinonStub };
+            sinon.stub(logger, "log");
+            const writer = new MessageWriter(new PassThrough(), { logMessages: false, logger });
+            writer.write({ jsonrpc: "2.0", method: "whatever" });
+            sinon.assert.notCalled(logger.log);
         });
     });
 });
