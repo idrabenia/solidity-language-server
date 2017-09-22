@@ -25,7 +25,7 @@ export const soliumDefaultRules = {
     "whitespace": true
 };
 
-export class SoliumService {
+export class SolidityLinter {
     private rules: any;
 
     constructor(rules = soliumDefaultRules) {
