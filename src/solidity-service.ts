@@ -12,6 +12,7 @@ import {
     TextDocumentSyncKind
 } from "vscode-languageserver";
 
+import { getDiagnostics } from "./diagnostic";
 import { LanguageClient } from "./language-client";
 import { LSPLogger, Logger } from "./logging";
 import { InMemoryFileSystem } from "./memfs";
@@ -136,10 +137,11 @@ export class SolidityService {
      */
     async textDocumentDidOpen(params: DidOpenTextDocumentParams): Promise<void> {
         const uri = normalizeUri(params.textDocument.uri);
+        const text = params.textDocument.text;
         // Ensure files needed for most operations are fetched
-        this.projectManager.didOpen(uri, params.textDocument.text);
+        this.projectManager.didOpen(uri, text);
         await new Promise(resolve => setTimeout(resolve, 200));
-        this._publishDiagnostics(uri);
+        this._publishDiagnostics(uri, text);
     }
 
     /**
@@ -161,7 +163,7 @@ export class SolidityService {
         }
         this.projectManager.didChange(uri, text);
         await new Promise(resolve => setTimeout(resolve, 200));
-        this._publishDiagnostics(uri);
+        this._publishDiagnostics(uri, text);
     }
 
     /**
@@ -193,7 +195,8 @@ export class SolidityService {
      *
      * @param uri URI of the file to check
      */
-    private _publishDiagnostics(_uri: string): void {
-        // FIXME: Implement.
+    private _publishDiagnostics(uri: string, text: string): void {
+        const diagnostics = getDiagnostics(uri2path(uri), text);
+        this.client.textDocumentPublishDiagnostics({ uri, diagnostics });
     }
 }
