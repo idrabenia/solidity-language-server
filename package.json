@@ -34,6 +34,13 @@
         ],
         "configuration": "./solidity.configuration.json"
       }
+    ],
+    "grammars": [
+      {
+        "language": "solidity",
+        "scopeName": "source.solidity",
+        "path": "./syntaxes/solidity.json"
+      }
     ]
   },
   "repository": "git@github.com:kodebox-io/solidity-language-server.git",
