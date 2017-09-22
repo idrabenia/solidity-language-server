@@ -3967,6 +3967,12 @@ vscode-jsonrpc@^3.4.0:
   version "3.4.0"
   resolved "https://registry.yarnpkg.com/vscode-jsonrpc/-/vscode-jsonrpc-3.4.0.tgz#aa95ac583bf31d80f725d57c27c09f4c2cfe9fa9"
 
+vscode-languageclient@^3.4.3:
+  version "3.4.3"
+  resolved "https://registry.yarnpkg.com/vscode-languageclient/-/vscode-languageclient-3.4.3.tgz#115d293351258e284d169e4d9d97e86d47eaa0f4"
+  dependencies:
+    vscode-languageserver-protocol "^3.4.1"
+
 vscode-languageserver-protocol@^3.4.1:
   version "3.4.1"
   resolved "https://registry.yarnpkg.com/vscode-languageserver-protocol/-/vscode-languageserver-protocol-3.4.1.tgz#96b7c8a3ed68a4ebd30a407b0427a7637935fe1f"

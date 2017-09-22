@@ -11,6 +11,7 @@
     "Other"
   ],
   "activationEvents": [
+    "onLanguage:solidity",
     "onCommand:extension.sayHello"
   ],
   "main": "./out/src/extension",
@@ -19,6 +20,19 @@
       {
         "command": "extension.sayHello",
         "title": "Hello World"
+      }
+    ],
+    "languages": [
+      {
+        "id": "solidity",
+        "aliases": [
+          "Solidity",
+          "solidity"
+        ],
+        "extensions": [
+          ".sol"
+        ],
+        "configuration": "./solidity.configuration.json"
       }
     ]
   },
@@ -81,6 +95,7 @@
     "solc": "^0.4.16",
     "solium": "^0.5.5",
     "vscode": "^1.1.5",
+    "vscode-languageclient": "^3.4.3",
     "vscode-languageserver": "^3.4.2",
     "vscode-languageserver-types": "^3.4.0"
   }

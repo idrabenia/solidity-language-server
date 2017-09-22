@@ -1,7 +1,7 @@
 import { isNotificationMessage } from "vscode-jsonrpc/lib/messages";
 import {
-    StreamMessageReader,
-    StreamMessageWriter
+    IPCMessageReader,
+    IPCMessageWriter,
 } from "vscode-languageserver";
 
 import {
@@ -12,25 +12,17 @@ import {
     registerLanguageHandler
 } from "./connection";
 import { RemoteLanguageClient } from "./language-client";
-import { FileLogger, StderrLogger } from "./logging";
+import { StderrLogger } from "./logging";
 import { SolidityService, SolidityServiceOptions } from "./solidity-service";
 
-const program = require("commander");
-const packageJson = require("../package.json");
-
-program
-    .version(packageJson.version)
-    .option("-l, --logfile [file]", "log to this file")
-    .parse(process.argv);
-
-const logger = program.logfile ? new FileLogger(program.logfile) : new StderrLogger();
+const logger = new StderrLogger();
 
 const options: SolidityServiceOptions & MessageLogOptions & RegisterLanguageHandlerOptions = {
     logger
 };
 
-const messageEmitter = new MessageEmitter(new StreamMessageReader(process.stdin), options);
-const messageWriter = new MessageWriter(new StreamMessageWriter(process.stdout), options);
+const messageEmitter = new MessageEmitter(new IPCMessageReader(process), options);
+const messageWriter = new MessageWriter(new IPCMessageWriter(process), options);
 const remoteClient = new RemoteLanguageClient(messageWriter);
 const service = new SolidityService(remoteClient, options);
 

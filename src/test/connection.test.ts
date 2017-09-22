@@ -3,6 +3,10 @@ import { PassThrough } from "stream";
 
 import * as sinon from "sinon";
 import { ErrorCodes } from "vscode-jsonrpc";
+import {
+    StreamMessageReader,
+    StreamMessageWriter
+} from "vscode-languageserver";
 
 import { MessageEmitter, MessageWriter, registerLanguageHandler } from "../connection";
 import { NoopLogger } from "../logging";
@@ -66,7 +70,7 @@ describe("connection", () => {
         test("should log messages if enabled", async () => {
             const logger = new NoopLogger() as NoopLogger & { log: sinon.SinonStub };
             sinon.stub(logger, "log");
-            const emitter = new MessageEmitter(new PassThrough(), { logMessages: true, logger });
+            const emitter = new MessageEmitter(new StreamMessageReader(new PassThrough()), { logMessages: true, logger });
             emitter.emit("message", { jsonrpc: "2.0", method: "whatever" });
             sinon.assert.calledOnce(logger.log);
             sinon.assert.calledWith(logger.log, "-->");
@@ -74,7 +78,7 @@ describe("connection", () => {
         test("should not log messages if disabled", async () => {
             const logger = new NoopLogger() as NoopLogger & { log: sinon.SinonStub };
             sinon.stub(logger, "log");
-            const emitter = new MessageEmitter(new PassThrough(), { logMessages: false, logger });
+            const emitter = new MessageEmitter(new StreamMessageReader(new PassThrough()), { logMessages: false, logger });
             emitter.emit("message", { jsonrpc: "2.0", method: "whatever" });
             sinon.assert.notCalled(logger.log);
         });
@@ -83,7 +87,7 @@ describe("connection", () => {
         test("should log messages if enabled", async () => {
             const logger = new NoopLogger() as NoopLogger & { log: sinon.SinonStub };
             sinon.stub(logger, "log");
-            const writer = new MessageWriter(new PassThrough(), { logMessages: true, logger });
+            const writer = new MessageWriter(new StreamMessageWriter(new PassThrough()), { logMessages: true, logger });
             writer.write({ jsonrpc: "2.0", method: "whatever" });
             sinon.assert.calledOnce(logger.log);
             sinon.assert.calledWith(logger.log, "<--");
@@ -91,7 +95,7 @@ describe("connection", () => {
         test("should not log messages if disabled", async () => {
             const logger = new NoopLogger() as NoopLogger & { log: sinon.SinonStub };
             sinon.stub(logger, "log");
-            const writer = new MessageWriter(new PassThrough(), { logMessages: false, logger });
+            const writer = new MessageWriter(new StreamMessageWriter(new PassThrough()), { logMessages: false, logger });
             writer.write({ jsonrpc: "2.0", method: "whatever" });
             sinon.assert.notCalled(logger.log);
         });

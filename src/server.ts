@@ -2,6 +2,10 @@ import * as cluster from "cluster";
 import * as net from "net";
 
 import { isNotificationMessage } from "vscode-jsonrpc/lib/messages";
+import {
+    StreamMessageReader,
+    StreamMessageWriter
+} from "vscode-languageserver";
 
 import { MessageEmitter, MessageLogOptions, MessageWriter, registerLanguageHandler } from "./connection";
 import { RemoteLanguageClient } from "./language-client";
@@ -53,8 +57,8 @@ export function serve(options: ServeOptions, createLangHandler = (remoteClient: 
             const id = counter++;
             logger.log(`Connection ${id} accepted`);
 
-            const messageEmitter = new MessageEmitter(socket as NodeJS.ReadableStream, options);
-            const messageWriter = new MessageWriter(socket, options);
+            const messageEmitter = new MessageEmitter(new StreamMessageReader(socket as NodeJS.ReadableStream), options);
+            const messageWriter = new MessageWriter(new StreamMessageWriter(socket), options);
             const remoteClient = new RemoteLanguageClient(messageWriter);
 
             // Add exit notification handler to close the socket on exit

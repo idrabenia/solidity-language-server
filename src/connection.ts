@@ -6,8 +6,8 @@ import * as _ from "lodash";
 import {
     ErrorCodes,
     Message,
-    StreamMessageReader as VSCodeStreamMessageReader,
-    StreamMessageWriter as VSCodeStreamMessageWriter
+    MessageReader as VSCodeMessageReader,
+    MessageWriter as VSCodeMessageWriter
 } from "vscode-jsonrpc";
 import {
     NotificationMessage,
@@ -35,9 +35,8 @@ export interface MessageLogOptions {
  */
 export class MessageEmitter extends EventEmitter {
 
-    constructor(input: NodeJS.ReadableStream, options: MessageLogOptions = {}) {
+    constructor(reader: VSCodeMessageReader, options: MessageLogOptions = {}) {
         super();
-        const reader = new VSCodeStreamMessageReader(input);
         // Forward events
         reader.listen(msg => {
             this.emit("message", msg);
@@ -89,14 +88,14 @@ export class MessageEmitter extends EventEmitter {
 export class MessageWriter {
     private logger: Logger;
     private logMessages: boolean;
-    private vscodeWriter: VSCodeStreamMessageWriter;
+    private vscodeWriter: VSCodeMessageWriter;
 
     /**
-     * @param output The output stream to write to (e.g. STDOUT or a socket)
+     * @param vscodeWriter The writer to write to
      * @param options
      */
-    constructor(output: NodeJS.WritableStream, options: MessageLogOptions = {}) {
-        this.vscodeWriter = new VSCodeStreamMessageWriter(output);
+    constructor(vscodeWriter: VSCodeMessageWriter, options: MessageLogOptions = {}) {
+        this.vscodeWriter = vscodeWriter;
         this.logger = options.logger || new NoopLogger();
         this.logMessages = !!options.logMessages;
     }
