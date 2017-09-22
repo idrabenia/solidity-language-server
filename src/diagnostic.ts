@@ -7,7 +7,7 @@ const compiler = new SolidityCompiler();
 const solium = new SoliumService();
 
 export function getDiagnostics(path: string, text: string): Diagnostic[] {
-    const soliumDiagnostics = solium.solium(text);
+    const soliumDiagnostics = solium.lint(text);
     const compilerDiagnostics = compiler.compile(path, text);
 
     return compilerDiagnostics.concat(soliumDiagnostics);

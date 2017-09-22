@@ -32,7 +32,7 @@ export class SoliumService {
         this.rules = rules;
     }
 
-    solium(text: string): Diagnostic[] {
+    lint(text: string): Diagnostic[] {
         try {
             const errorObjects = Solium.lint(text, { rules: this.rules });
             return errorObjects.map(errObjectToDiagnostic);
