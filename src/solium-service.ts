@@ -28,7 +28,7 @@ export const soliumDefaultRules = {
 export class SoliumService {
     private rules: any;
 
-    constructor(rules: any) {
+    constructor(rules = soliumDefaultRules) {
         this.rules = rules;
     }
 
