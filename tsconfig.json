@@ -1,13 +1,15 @@
 {
     "compilerOptions": {
-        "lib": [
-            "es2016"
-        ],
-        "outDir": "./build/",
-        "sourceMap": true,
-        "noImplicitAny": true,
         "module": "commonjs",
-        "target": "es2016",
+        "target": "es6",
+        "outDir": "./out",
+        "lib": [
+            "es6",
+            "dom"
+        ],
+        "sourceMap": true,
+        "rootDir": ".",
+        "noImplicitAny": true,
         "newLine": "LF",
         "allowJs": true,
         "noUnusedLocals": true,

@@ -2,7 +2,9 @@
 {
     "files.exclude": {
         "node_modules": true,
-        ".vscode": true,
+        "build": true
+    },
+    "search.exclude": {
         "build": true
     },
     "tsimporter.doubleQuotes": true

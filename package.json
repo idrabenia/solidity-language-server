@@ -1,14 +1,36 @@
 {
   "name": "solidity-language-server",
-  "version": "0.1.0",
   "description": "A language server for Solidity language",
-  "main": "index.js",
+  "displayName": "solidity-language-server",
+  "version": "0.1.0",
+  "publisher": "Kodebox",
+  "engines": {
+    "vscode": "^1.16.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onCommand:extension.sayHello"
+  ],
+  "main": "./out/src/extension",
+  "contributes": {
+    "commands": [
+      {
+        "command": "extension.sayHello",
+        "title": "Hello World"
+      }
+    ]
+  },
   "repository": "git@github.com:kodebox-io/solidity-language-server.git",
   "author": "Kwang Yul Seo <kseo@kodebox.io>",
   "license": "MIT",
   "scripts": {
-    "dev": "./node_modules/.bin/nodemon src/language-server.ts",
-    "test": "jest --env node"
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "postinstall": "node ./node_modules/vscode/bin/install",
+    "test": "npm run compile && node ./node_modules/vscode/bin/test"
   },
   "jest": {
     "transform": {
@@ -58,6 +80,7 @@
     "sinon": "^3.3.0",
     "solc": "^0.4.16",
     "solium": "^0.5.5",
+    "vscode": "^1.1.5",
     "vscode-languageserver": "^3.4.2",
     "vscode-languageserver-types": "^3.4.0"
   }
