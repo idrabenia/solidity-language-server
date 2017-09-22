@@ -5,6 +5,26 @@ import {
 
 const Solium = require("solium");
 
+export const soliumDefaultRules = {
+    "array-declarations": true,
+    "blank-lines": false,
+    "camelcase": true,
+    "deprecated-suicide": true,
+    "double-quotes": true,
+    "imports-on-top": true,
+    "indentation": false,
+    "lbrace": true,
+    "mixedcase": true,
+    "no-empty-blocks": true,
+    "no-unused-vars": true,
+    "no-with": true,
+    "operator-whitespace": true,
+    "pragma-on-top": true,
+    "uppercase": true,
+    "variable-declarations": true,
+    "whitespace": true
+};
+
 export class SoliumService {
     private rules: any;
 

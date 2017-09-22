@@ -16,6 +16,7 @@ import { LanguageClient } from "./language-client";
 import { LSPLogger, Logger } from "./logging";
 import { InMemoryFileSystem } from "./memfs";
 import { ProjectManager } from "./project-manager";
+import { soliumDefaultRules } from "./solium-service";
 import { normalizeUri, path2uri, uri2path } from "./util";
 
 export interface SolidityServiceOptions {
@@ -52,25 +53,7 @@ export class SolidityService {
      * Settings synced though `didChangeConfiguration`
      */
     protected settings: Settings = {
-        soliumRules: {
-            "array-declarations": true,
-            "blank-lines": false,
-            "camelcase": true,
-            "deprecated-suicide": true,
-            "double-quotes": true,
-            "imports-on-top": true,
-            "indentation": false,
-            "lbrace": true,
-            "mixedcase": true,
-            "no-empty-blocks": true,
-            "no-unused-vars": true,
-            "no-with": true,
-            "operator-whitespace": true,
-            "pragma-on-top": true,
-            "uppercase": true,
-            "variable-declarations": true,
-            "whitespace": true
-        }
+        soliumRules: soliumDefaultRules
     };
 
     constructor(protected client: LanguageClient, protected options: SolidityServiceOptions = {}) {
