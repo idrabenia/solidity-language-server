@@ -29,6 +29,7 @@ export class ProjectManager {
     ) {
         this.rootPath = rootPath;
         this.inMemoryFs = inMemoryFileSystem;
+        this.versions = new Map<string, number>();
     }
 
     /**
