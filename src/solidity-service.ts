@@ -2,6 +2,7 @@ import { Observable } from "@reactivex/rxjs";
 import { Operation } from "fast-json-patch";
 import * as _ from "lodash";
 import {
+    CompletionList,
     DidChangeConfigurationParams,
     DidChangeTextDocumentParams,
     DidCloseTextDocumentParams,
@@ -9,9 +10,11 @@ import {
     DidSaveTextDocumentParams,
     InitializeParams,
     InitializeResult,
+    TextDocumentPositionParams,
     TextDocumentSyncKind
 } from "vscode-languageserver";
 
+import { globalFunctionCompletions } from "./completion";
 import { getDiagnostics } from "./diagnostic";
 import { LanguageClient } from "./language-client";
 import { LSPLogger, Logger } from "./logging";
@@ -208,5 +211,29 @@ export class SolidityService {
     private _publishDiagnostics(uri: string, text: string): void {
         const diagnostics = getDiagnostics(uri2path(uri), text);
         this.client.textDocumentPublishDiagnostics({ uri, diagnostics });
+    }
+
+    /**
+     * The Completion request is sent from the client to the server to compute completion items at a
+     * given cursor position. Completion items are presented in the
+     * [IntelliSense](https://code.visualstudio.com/docs/editor/editingevolved#_intellisense) user
+     * interface. If computing full completion items is expensive, servers can additionally provide
+     * a handler for the completion item resolve request ('completionItem/resolve'). This request is
+     * sent when a completion item is selected in the user interface. A typically use case is for
+     * example: the 'textDocument/completion' request doesn't fill in the `documentation` property
+     * for returned completion items since it is expensive to compute. When the item is selected in
+     * the user interface then a 'completionItem/resolve' request is sent with the selected
+     * completion item as a param. The returned completion item should have the documentation
+     * property filled in.
+     *
+     * @return Observable of JSON Patches that build a `CompletionList` result
+     */
+    textDocumentCompletion(_params: TextDocumentPositionParams): Observable<Operation> {
+        const completions = globalFunctionCompletions();
+        return Observable.from(completions)
+            .map(item => {
+                return { op: "add", path: "/items/-", value: item } as Operation;
+            })
+            .startWith({ op: "add", path: "", value: { isIncomplete: false, items: [] } as CompletionList } as Operation);
     }
 }
