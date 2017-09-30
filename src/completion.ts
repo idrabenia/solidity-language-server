@@ -1,3 +1,4 @@
+import * as _ from "lodash";
 import {
     CompletionItem,
     CompletionItemKind
@@ -118,4 +119,24 @@ export function typeCompletions(): CompletionItem[] {
         item.detail = type + " type";
         return item;
     });
+}
+
+export function unitCompletions(): CompletionItem[] {
+    const etherUnits = ["wei", "finney", "szabo", "ether"];
+    const etherUnitCompletions = etherUnits.map(etherUnit => {
+        const item = CompletionItem.create(etherUnit);
+        item.kind = CompletionItemKind.Unit;
+        item.detail = etherUnit + ": ether unit";
+        return item;
+    });
+
+    const timeUnits = ["seconds", "minutes", "hours", "days", "weeks", "years"];
+    const timeUnitCompletions = timeUnits.map(timeUnit => {
+        const item = CompletionItem.create(timeUnit);
+        item.kind = CompletionItemKind.Unit;
+        item.detail = timeUnit + ": time unit";
+        return item;
+    });
+
+    return _.concat(etherUnitCompletions, timeUnitCompletions);
 }

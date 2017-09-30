@@ -14,7 +14,7 @@ import {
     TextDocumentSyncKind
 } from "vscode-languageserver";
 
-import { globalFunctionCompletions, globalVariableCompletions, typeCompletions } from "./completion";
+import { globalFunctionCompletions, globalVariableCompletions, typeCompletions, unitCompletions } from "./completion";
 import { getDiagnostics } from "./diagnostic";
 import { LanguageClient } from "./language-client";
 import { LSPLogger, Logger } from "./logging";
@@ -232,7 +232,8 @@ export class SolidityService {
         const completions = _.concat(
             globalFunctionCompletions(),
             globalVariableCompletions(),
-            typeCompletions()
+            typeCompletions(),
+            unitCompletions()
         );
         return Observable.from(completions)
             .map(item => {
