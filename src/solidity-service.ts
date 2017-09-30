@@ -14,7 +14,7 @@ import {
     TextDocumentSyncKind
 } from "vscode-languageserver";
 
-import { globalFunctionCompletions } from "./completion";
+import { globalFunctionCompletions, globalVariableCompletions } from "./completion";
 import { getDiagnostics } from "./diagnostic";
 import { LanguageClient } from "./language-client";
 import { LSPLogger, Logger } from "./logging";
@@ -229,7 +229,7 @@ export class SolidityService {
      * @return Observable of JSON Patches that build a `CompletionList` result
      */
     textDocumentCompletion(_params: TextDocumentPositionParams): Observable<Operation> {
-        const completions = globalFunctionCompletions();
+        const completions = _.concat(globalFunctionCompletions(), globalVariableCompletions());
         return Observable.from(completions)
             .map(item => {
                 return { op: "add", path: "/items/-", value: item } as Operation;

@@ -84,3 +84,28 @@ export function globalFunctionCompletions(): CompletionItem[] {
         },
     ];
 }
+
+export function globalVariableCompletions(): CompletionItem[] {
+    return [
+        {
+            detail: "Current block",
+            kind: CompletionItemKind.Variable,
+            label: "block",
+        },
+        {
+            detail: "Current message",
+            kind: CompletionItemKind.Variable,
+            label: "msg",
+        },
+        {
+            detail: "(uint): current block timestamp (alias for block.timestamp)",
+            kind: CompletionItemKind.Variable,
+            label: "now",
+        },
+        {
+            detail: "Current transaction",
+            kind: CompletionItemKind.Variable,
+            label: "tx",
+        },
+    ];
+}
