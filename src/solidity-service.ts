@@ -81,7 +81,7 @@ export class SolidityService {
             capabilities: {
                 // Tell the client that the server works in FULL text document sync mode
                 textDocumentSync: TextDocumentSyncKind.Full,
-                hoverProvider: true,
+                hoverProvider: false,
                 signatureHelpProvider: {
                     triggerCharacters: ["(", ","]
                 },
@@ -93,7 +93,7 @@ export class SolidityService {
                     resolveProvider: true,
                     triggerCharacters: ["."]
                 },
-                codeActionProvider: true,
+                codeActionProvider: false,
                 renameProvider: true,
                 executeCommandProvider: {
                     commands: []
