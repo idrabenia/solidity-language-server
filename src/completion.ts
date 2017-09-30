@@ -109,3 +109,13 @@ export function globalVariableCompletions(): CompletionItem[] {
         },
     ];
 }
+
+export function typeCompletions(): CompletionItem[] {
+    const types = ["address", "string", "bytes", "byte", "int", "uint", "bool", "hash"];
+    return types.map(type => {
+        const item = CompletionItem.create(type);
+        item.kind = CompletionItemKind.Keyword;
+        item.detail = type + " type";
+        return item;
+    });
+}
