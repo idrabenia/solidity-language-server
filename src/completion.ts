@@ -1,12 +1,13 @@
 import * as _ from "lodash";
 import {
     CompletionItem,
-    CompletionItemKind
+    CompletionItemKind,
+    Position
 } from "vscode-languageserver";
 
 const solparse = require("solparse");
 
-export function getGlobalFunctionCompletions(): CompletionItem[] {
+function getGlobalFunctionCompletions(): CompletionItem[] {
     return [
         {
             detail: "assert(bool condition): throws if the condition is not met - to be used for internal errors.",
@@ -88,7 +89,7 @@ export function getGlobalFunctionCompletions(): CompletionItem[] {
     ];
 }
 
-export function getGlobalVariableCompletions(): CompletionItem[] {
+function getGlobalVariableCompletions(): CompletionItem[] {
     return [
         {
             detail: "Current block",
@@ -113,7 +114,7 @@ export function getGlobalVariableCompletions(): CompletionItem[] {
     ];
 }
 
-export function getTypeCompletions(): CompletionItem[] {
+function getTypeCompletions(): CompletionItem[] {
     const types = ["address", "string", "bytes", "byte", "int", "uint", "bool", "hash"];
     return types.map(type => {
         const item = CompletionItem.create(type);
@@ -123,7 +124,7 @@ export function getTypeCompletions(): CompletionItem[] {
     });
 }
 
-export function getUnitCompletions(): CompletionItem[] {
+function getUnitCompletions(): CompletionItem[] {
     const etherUnits = ["wei", "finney", "szabo", "ether"];
     const etherUnitCompletions = etherUnits.map(etherUnit => {
         const item = CompletionItem.create(etherUnit);
@@ -143,14 +144,24 @@ export function getUnitCompletions(): CompletionItem[] {
     return _.concat(etherUnitCompletions, timeUnitCompletions);
 }
 
-export function getCompletions(text: string): CompletionItem[] {
+export function getCompletionsAtPosition(text: string, position: Position): CompletionItem[] {
+    const lineTexts = text.split(/\r?\n/g);
+    const lineText = lineTexts[position.line];
+    const { triggeredByDot, wordEndCharacter } = isCompletionTriggeredByDot(lineText, position.character);
+    if (triggeredByDot) {
+        return getContextualCompletions(lineText, wordEndCharacter);
+    } else {
+        return getAllCompletions(text);
+    }
+}
+
+function getAllCompletions(text: string): CompletionItem[] {
     let result;
     try {
         result = solparse.parse(text);
     } catch (err) {
         return [];
     }
-
     const completionItems: CompletionItem[] = [];
     for (const element of result.body) {
         if (element.type !== "ContractStatement" && element.type !== "LibraryStatement") {
@@ -180,7 +191,57 @@ export function getCompletions(text: string): CompletionItem[] {
             }
         }
     }
-    return completionItems;
+
+    return _.concat(
+        completionItems,
+        getGlobalFunctionCompletions(),
+        getGlobalVariableCompletions(),
+        getTypeCompletions(),
+        getUnitCompletions());
+}
+
+function isCompletionTriggeredByDot(line: string, character: number): { triggeredByDot: boolean, wordEndCharacter: number } {
+    let start = 0;
+    let triggeredByDot = false;
+    for (let i = character; i >= 0; i--) {
+        if (line[i] === " ") {
+            triggeredByDot = false;
+            i = 0;
+            start = 0;
+            break;
+        }
+        if (line[i] === ".") {
+            start = i;
+            i = 0;
+            triggeredByDot = true;
+            break;
+        }
+    }
+    return {
+        triggeredByDot,
+        wordEndCharacter: start
+    };
+}
+
+function getContextualCompletions(lineText: string, wordEndCharacter: number): CompletionItem[] {
+    if (isCompletionTrigeredByVariableName("block", lineText, wordEndCharacter)) {
+        return getBlockCompletions();
+    } else if (isCompletionTrigeredByVariableName("msg", lineText, wordEndCharacter)) {
+        return getMsgCompletions();
+    } else if (isCompletionTrigeredByVariableName("tx", lineText, wordEndCharacter)) {
+        return getTxCompletions();
+    } else {
+        return [];
+    }
+}
+
+function isCompletionTrigeredByVariableName(variableName: string, lineText: string, wordEndCharacter: number): boolean {
+    const length = variableName.length;
+    if (wordEndCharacter >= length
+        && lineText.substr(wordEndCharacter - length, length) === variableName) {
+        return true;
+    }
+    return false;
 }
 
 function createFunctionEventCompletionItem(contractElement: any, type: string, contractName: string): CompletionItem {
@@ -265,4 +326,86 @@ function createFunctionParamsSnippet(params: any): string {
         }
     }
     return paramsSnippet;
+}
+
+function getBlockCompletions(): CompletionItem[] {
+    return [
+        {
+            detail: "(address): Current block miner’s address",
+            kind: CompletionItemKind.Property,
+            label: "coinbase"
+        },
+        {
+            detail: "(bytes32): Hash of the given block - only works for 256 most recent blocks excluding current",
+            insertText: "blockhash(${1:blockNumber});",
+            insertTextFormat: 2,
+            kind: CompletionItemKind.Method,
+            label: "blockhash"
+        },
+        {
+            detail: "(uint): current block difficulty",
+            kind: CompletionItemKind.Property,
+            label: "difficulty"
+        },
+        {
+            detail: "(uint): current block gaslimit",
+            kind: CompletionItemKind.Property,
+            label: "gasLimit"
+        },
+        {
+            detail: "(uint): current block number",
+            kind: CompletionItemKind.Property,
+            label: "number"
+        },
+        {
+            detail: "(uint): current block timestamp as seconds since unix epoch",
+            kind: CompletionItemKind.Property,
+            label: "timestamp"
+        }
+    ];
+}
+
+function getTxCompletions(): CompletionItem[] {
+    return [
+        {
+            detail: "(uint): gas price of the transaction",
+            kind: CompletionItemKind.Property,
+            label: "gas",
+        },
+        {
+            detail: "(address): sender of the transaction (full call chain)",
+            kind: CompletionItemKind.Property,
+            label: "origin",
+        },
+    ];
+}
+
+function getMsgCompletions(): CompletionItem[] {
+    return [
+        {
+            detail: "(bytes): complete calldata",
+            kind: CompletionItemKind.Property,
+            label: "data"
+        },
+        {
+            detail: "(uint): remaining gas",
+            kind: CompletionItemKind.Property,
+            label: "gas"
+        },
+        {
+            detail: "(address): sender of the message (current call)",
+            kind: CompletionItemKind.Property,
+            label: "sender"
+        },
+        {
+            detail: "(bytes4): first four bytes of the calldata (i.e. function identifier)",
+            kind: CompletionItemKind.Property,
+            label: "sig"
+        },
+        {
+            detail: "(uint): number of wei sent with the message",
+            kind: CompletionItemKind.Property,
+            label: "value"
+        }
+    ];
 }

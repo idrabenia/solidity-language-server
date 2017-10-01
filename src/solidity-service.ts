@@ -1,5 +1,3 @@
-import * as fs from "fs";
-
 import { Observable } from "@reactivex/rxjs";
 import { Operation } from "fast-json-patch";
 import * as _ from "lodash";
@@ -16,7 +14,7 @@ import {
     TextDocumentSyncKind
 } from "vscode-languageserver";
 
-import { getCompletions, getGlobalFunctionCompletions, getGlobalVariableCompletions, getTypeCompletions, getUnitCompletions } from "./completion";
+import { getCompletionsAtPosition } from "./completion";
 import { getDiagnostics } from "./diagnostic";
 import { LanguageClient } from "./language-client";
 import { LSPLogger, Logger } from "./logging";
@@ -232,17 +230,8 @@ export class SolidityService {
      */
     textDocumentCompletion(params: TextDocumentPositionParams): Observable<Operation> {
         const uri = normalizeUri(params.textDocument.uri);
-        const completions = _.concat(
-            getGlobalFunctionCompletions(),
-            getGlobalVariableCompletions(),
-            getTypeCompletions(),
-            getUnitCompletions()
-        );
-        const fileName: string = uri2path(uri);
-        const text = this._getSourceText(fileName);
-        if (text) {
-            completions.push(...getCompletions(text));
-        }
+        const text = this._getSourceText(uri);
+        const completions = getCompletionsAtPosition(text, params.position);
 
         return Observable.from(completions)
             .map(item => {
@@ -251,7 +240,7 @@ export class SolidityService {
             .startWith({ op: "add", path: "", value: { isIncomplete: false, items: [] } as CompletionList } as Operation);
     }
 
-    private _getSourceText(fileName: string): string {
-        return fs.readFileSync(fileName, "utf-8");
+    private _getSourceText(uri: string): string {
+        return this.projectManager.getFs().getContent(uri);
     }
 }

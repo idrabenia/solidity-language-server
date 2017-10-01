@@ -19,6 +19,13 @@ export class ProjectManager {
     private inMemoryFs: InMemoryFileSystem;
 
     /**
+     * @return local side of file content provider which keeps cached copies of fethed files
+     */
+    getFs(): InMemoryFileSystem {
+        return this.inMemoryFs;
+    }
+
+    /**
      * @param rootPath root path as passed to `initialize`
      * @param inMemoryFileSystem File system that keeps structure and contents in memory
      */
