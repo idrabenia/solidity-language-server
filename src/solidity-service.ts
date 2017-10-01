@@ -20,7 +20,7 @@ import { LanguageClient } from "./language-client";
 import { LSPLogger, Logger } from "./logging";
 import { InMemoryFileSystem } from "./memfs";
 import { ProjectManager } from "./project-manager";
-import { soliumDefaultRules } from "./solidity-linter";
+import { soliumDefaultRules } from "./solidity";
 import { normalizeUri, path2uri, uri2path } from "./util";
 
 export interface SolidityServiceOptions {
