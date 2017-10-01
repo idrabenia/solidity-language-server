@@ -3,8 +3,8 @@ import { Glob } from "glob";
 import * as fs from "mz/fs";
 import Semaphore from "semaphore-async-await";
 
+import { normalizeUri, uri2path } from "./core";
 import { InMemoryFileSystem } from "./memfs";
-import { normalizeUri, uri2path } from "./util";
 
 export interface FileSystem {
     /**

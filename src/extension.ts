@@ -8,7 +8,7 @@ import {
     TransportKind
 } from "vscode-languageclient";
 
-import { combinePaths } from "./util";
+import { combinePaths } from "./core";
 
 // this method is called when your extension is activated
 // your extension is activated the very first time the command is executed

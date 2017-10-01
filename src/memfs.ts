@@ -1,7 +1,7 @@
 import { EventEmitter } from "events";
 
+import { path2uri, uri2path } from "./core";
 import { Logger, NoopLogger } from "./logging";
-import { path2uri, uri2path } from "./util";
 
 /**
  * In-memory file cache node which represents either a folder or a file.
