@@ -21,6 +21,13 @@ import {
 import { Logger, NoopLogger } from "./logging";
 import { SolidityService } from "./solidity-service";
 
+/**
+ * Interface for JSON RPC messages with tracing metadata
+ */
+export interface HasMeta {
+    meta: { [key: string]: any };
+}
+
 export interface MessageLogOptions {
     /** Logger to use */
     logger?: Logger;

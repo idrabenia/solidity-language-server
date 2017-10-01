@@ -59,7 +59,7 @@ export function serve(options: ServeOptions, createLangHandler = (remoteClient: 
 
             const messageEmitter = new MessageEmitter(new StreamMessageReader(socket as NodeJS.ReadableStream), options);
             const messageWriter = new MessageWriter(new StreamMessageWriter(socket), options);
-            const remoteClient = new RemoteLanguageClient(messageWriter);
+            const remoteClient = new RemoteLanguageClient(messageEmitter, messageWriter);
 
             // Add exit notification handler to close the socket on exit
             messageEmitter.on("message", message => {

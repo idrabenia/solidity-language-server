@@ -23,7 +23,7 @@ const options: SolidityServiceOptions & MessageLogOptions & RegisterLanguageHand
 
 const messageEmitter = new MessageEmitter(new IPCMessageReader(process), options);
 const messageWriter = new MessageWriter(new IPCMessageWriter(process), options);
-const remoteClient = new RemoteLanguageClient(messageWriter);
+const remoteClient = new RemoteLanguageClient(messageEmitter, messageWriter);
 const service = new SolidityService(remoteClient, options);
 
 // Add an exit notification handler to kill the process
