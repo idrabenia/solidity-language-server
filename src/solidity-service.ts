@@ -16,7 +16,7 @@ import {
     TextDocumentSyncKind
 } from "vscode-languageserver";
 
-import { completionItems, globalFunctionCompletions, globalVariableCompletions, typeCompletions, unitCompletions } from "./completion";
+import { getCompletions, getGlobalFunctionCompletions, getGlobalVariableCompletions, getTypeCompletions, getUnitCompletions } from "./completion";
 import { getDiagnostics } from "./diagnostic";
 import { LanguageClient } from "./language-client";
 import { LSPLogger, Logger } from "./logging";
@@ -233,15 +233,15 @@ export class SolidityService {
     textDocumentCompletion(params: TextDocumentPositionParams): Observable<Operation> {
         const uri = normalizeUri(params.textDocument.uri);
         const completions = _.concat(
-            globalFunctionCompletions(),
-            globalVariableCompletions(),
-            typeCompletions(),
-            unitCompletions()
+            getGlobalFunctionCompletions(),
+            getGlobalVariableCompletions(),
+            getTypeCompletions(),
+            getUnitCompletions()
         );
         const fileName: string = uri2path(uri);
         const text = this._getSourceText(fileName);
         if (text) {
-            completions.push(...completionItems(text));
+            completions.push(...getCompletions(text));
         }
 
         return Observable.from(completions)

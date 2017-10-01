@@ -6,7 +6,7 @@ import {
 
 const solparse = require("solparse");
 
-export function globalFunctionCompletions(): CompletionItem[] {
+export function getGlobalFunctionCompletions(): CompletionItem[] {
     return [
         {
             detail: "assert(bool condition): throws if the condition is not met - to be used for internal errors.",
@@ -88,7 +88,7 @@ export function globalFunctionCompletions(): CompletionItem[] {
     ];
 }
 
-export function globalVariableCompletions(): CompletionItem[] {
+export function getGlobalVariableCompletions(): CompletionItem[] {
     return [
         {
             detail: "Current block",
@@ -113,7 +113,7 @@ export function globalVariableCompletions(): CompletionItem[] {
     ];
 }
 
-export function typeCompletions(): CompletionItem[] {
+export function getTypeCompletions(): CompletionItem[] {
     const types = ["address", "string", "bytes", "byte", "int", "uint", "bool", "hash"];
     return types.map(type => {
         const item = CompletionItem.create(type);
@@ -123,7 +123,7 @@ export function typeCompletions(): CompletionItem[] {
     });
 }
 
-export function unitCompletions(): CompletionItem[] {
+export function getUnitCompletions(): CompletionItem[] {
     const etherUnits = ["wei", "finney", "szabo", "ether"];
     const etherUnitCompletions = etherUnits.map(etherUnit => {
         const item = CompletionItem.create(etherUnit);
@@ -143,7 +143,7 @@ export function unitCompletions(): CompletionItem[] {
     return _.concat(etherUnitCompletions, timeUnitCompletions);
 }
 
-export function completionItems(text: string): CompletionItem[] {
+export function getCompletions(text: string): CompletionItem[] {
     let result;
     try {
         result = solparse.parse(text);
