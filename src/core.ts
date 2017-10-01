@@ -114,3 +114,8 @@ export function combinePaths(path1: string, path2: string) {
     if (path1.charAt(path1.length - 1) === directorySeparator) return path1 + path2;
     return path1 + directorySeparator + path2;
 }
+
+export function isExternalModuleNameRelative(moduleName: string): boolean {
+    // An external module name is "relative" if the first term is "." or "..".
+    return /^\.\.?($|[\\/])/.test(moduleName);
+}
