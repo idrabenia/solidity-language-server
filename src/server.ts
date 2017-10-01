@@ -8,9 +8,9 @@ import {
 } from "vscode-languageserver";
 
 import { MessageEmitter, MessageLogOptions, MessageWriter, registerLanguageHandler } from "./connection";
-import { RemoteLanguageClient } from "./language-client";
+import { RemoteLanguageClient } from "./languageClient";
 import { Logger, PrefixedLogger, StdioLogger } from "./logging";
-import { SolidityService } from "./solidity-service";
+import { SolidityService } from "./solidityService";
 
 /**
  * Creates a Logger prefixed with master or worker ID

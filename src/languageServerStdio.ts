@@ -11,9 +11,9 @@ import {
     RegisterLanguageHandlerOptions,
     registerLanguageHandler
 } from "./connection";
-import { RemoteLanguageClient } from "./language-client";
+import { RemoteLanguageClient } from "./languageClient";
 import { FileLogger, StderrLogger } from "./logging";
-import { SolidityService, SolidityServiceOptions } from "./solidity-service";
+import { SolidityService, SolidityServiceOptions } from "./solidityService";
 
 const program = require("commander");
 const packageJson = require("../package.json");

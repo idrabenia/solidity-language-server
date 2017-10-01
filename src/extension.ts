@@ -30,7 +30,7 @@ export function activate(context: vscode.ExtensionContext) {
 
     context.subscriptions.push(disposable);
 
-    const serverModule = combinePaths(__dirname, "language-server-ipc.js");
+    const serverModule = combinePaths(__dirname, "languageServerIpc.js");
 
     const serverOptions: ServerOptions = {
         debug: {

@@ -4,7 +4,7 @@ import { inspect } from "util";
 import * as chalk from "chalk";
 import { MessageType } from "vscode-languageserver";
 
-import { LanguageClient } from "./language-client";
+import { LanguageClient } from "./languageClient";
 
 export interface Logger {
     log(...values: any[]): void;

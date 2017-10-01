@@ -1,6 +1,6 @@
 import { FileLogger, StdioLogger } from "./logging";
 import { ServeOptions, serve } from "./server";
-import { SolidityService, SolidityServiceOptions } from "./solidity-service";
+import { SolidityService, SolidityServiceOptions } from "./solidityService";
 
 const program = require("commander");
 

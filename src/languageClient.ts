@@ -14,7 +14,7 @@ import {
 } from "vscode-languageserver";
 
 import { HasMeta, MessageEmitter, MessageWriter } from "./connection";
-import { TextDocumentContentParams, WorkspaceFilesParams } from "./request-type";
+import { TextDocumentContentParams, WorkspaceFilesParams } from "./requestType";
 
 export interface LanguageClient {
     /**

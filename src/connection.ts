@@ -19,7 +19,7 @@ import {
 } from "vscode-jsonrpc/lib/messages";
 
 import { Logger, NoopLogger } from "./logging";
-import { SolidityService } from "./solidity-service";
+import { SolidityService } from "./solidityService";
 
 /**
  * Interface for JSON RPC messages with tracing metadata

@@ -10,7 +10,7 @@ import {
 
 import { MessageEmitter, MessageWriter, registerLanguageHandler } from "../connection";
 import { NoopLogger } from "../logging";
-import { SolidityService } from "../solidity-service";
+import { SolidityService } from "../solidityService";
 
 describe("connection", () => {
     describe("registerLanguageHandler()", () => {
