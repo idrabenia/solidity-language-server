@@ -3378,7 +3378,7 @@ solium@^0.5.5:
     sol-explore "^1.6.1"
     solparse "^1.2.2"
 
-solparse@^1.2.2:
+solparse@^1.2.2, solparse@^1.2.7:
   version "1.2.7"
   resolved "https://registry.yarnpkg.com/solparse/-/solparse-1.2.7.tgz#94c053bf2af6903a8c01bb29648179ff373367f6"
   dependencies:

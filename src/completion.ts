@@ -4,6 +4,8 @@ import {
     CompletionItemKind
 } from "vscode-languageserver";
 
+const solparse = require("solparse");
+
 export function globalFunctionCompletions(): CompletionItem[] {
     return [
         {
@@ -139,4 +141,128 @@ export function unitCompletions(): CompletionItem[] {
     });
 
     return _.concat(etherUnitCompletions, timeUnitCompletions);
+}
+
+export function completionItems(text: string): CompletionItem[] {
+    let result;
+    try {
+        result = solparse.parse(text);
+    } catch (err) {
+        return [];
+    }
+
+    const completionItems: CompletionItem[] = [];
+    for (const element of result.body) {
+        if (element.type !== "ContractStatement" && element.type !== "LibraryStatement") {
+            continue;
+        }
+        if (typeof element.body === "undefined" || element.body === null) {
+            continue;
+        }
+        const contractName = element.name;
+        for (const contractElement of element.body) {
+            switch (contractElement.type) {
+                case "FunctionDeclaration":
+                    if (contractElement.name !== contractName) {
+                        completionItems.push(createFunctionEventCompletionItem(contractElement, "function", contractName));
+                    }
+                    break;
+                case "EventDeclaration":
+                    completionItems.push(createFunctionEventCompletionItem(contractElement, "event", contractName));
+                    break;
+                case "StateVariableDeclaration":
+                    const typeStr = typeStringFromLiteral(contractElement.literal);
+                    const completionItem = CompletionItem.create(contractElement.name);
+                    completionItem.kind = CompletionItemKind.Field;
+                    completionItem.detail = "(state variable in " + contractName + ") " + typeStr + " " + contractElement.name;
+                    completionItems.push(completionItem);
+                    break;
+            }
+        }
+    }
+    return completionItems;
+}
+
+function createFunctionEventCompletionItem(contractElement: any, type: string, contractName: string): CompletionItem {
+    const completionItem = CompletionItem.create(contractElement.name);
+    const paramsInfo = createParamsInfo(contractElement.params);
+    const paramsSnippet = createFunctionParamsSnippet(contractElement.params);
+    let returnParamsInfo = createParamsInfo(contractElement.returnParams);
+    if (returnParamsInfo !== "") {
+        returnParamsInfo = " returns (" + returnParamsInfo + ")";
+    }
+    const info = "(" + type + " in " + contractName + ") " + contractElement.name + "(" + paramsInfo + ")" + returnParamsInfo;
+
+    completionItem.kind = CompletionItemKind.Function;
+    completionItem.insertTextFormat = 2;
+    completionItem.insertText = contractElement.name + "(" + paramsSnippet + ");";
+    completionItem.documentation = info;
+    completionItem.detail = info;
+    return completionItem;
+}
+
+function typeStringFromLiteral(literal: any) {
+    let isMapping = false;
+    let suffixType = "";
+
+    const literalType = literal.literal;
+    if (typeof literalType.type !== "undefined") {
+        isMapping = literalType.type === "MappingExpression";
+        if (isMapping) {
+            suffixType = "(" + typeStringFromLiteral(literalType.from) + " => " + typeStringFromLiteral(literalType.to) + ")";
+        }
+    }
+
+    const isArray = literal.array_parts.length > 0;
+    if (isArray) {
+        suffixType = suffixType + "[]";
+    }
+
+    if (isMapping) {
+        return "mapping" + suffixType;
+    }
+
+    return literalType + suffixType;
+}
+
+function createParamsInfo(params: any): string {
+    if (typeof params === "undefined" || params === null) {
+        return "";
+    }
+
+    let paramsInfo = "";
+    for (const paramElement of params) {
+        const typStr = typeStringFromLiteral(paramElement.literal);
+        let currentParamInfo = "";
+        if (typeof paramElement.id === "undefined" || paramElement.id === null) {
+            currentParamInfo = typStr;
+        } else {
+            currentParamInfo = typStr + " " + paramElement.id;
+        }
+        if (paramsInfo === "") {
+            paramsInfo = currentParamInfo;
+        } else {
+            paramsInfo = paramsInfo + ", " + currentParamInfo;
+        }
+    }
+    return paramsInfo;
+}
+
+function createFunctionParamsSnippet(params: any): string {
+    if (typeof params === "undefined" || params === null) {
+        return "";
+    }
+
+    let paramsSnippet = "";
+    let counter = 0;
+    for (const paramElement of params) {
+        counter = counter + 1;
+        const currentParamSnippet = "${" + counter + ":" + paramElement.id + "}";
+        if (paramsSnippet === "") {
+            paramsSnippet = currentParamSnippet;
+        } else {
+            paramsSnippet = paramsSnippet + ", " + currentParamSnippet;
+        }
+    }
+    return paramsSnippet;
 }

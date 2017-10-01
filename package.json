@@ -110,6 +110,7 @@
     "semaphore-async-await": "^1.5.1",
     "solc": "^0.4.16",
     "solium": "^0.5.5",
+    "solparse": "^1.2.7",
     "vscode": "^1.1.5",
     "vscode-languageclient": "^3.4.3",
     "vscode-languageserver": "^3.4.2",
