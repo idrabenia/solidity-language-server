@@ -5,18 +5,16 @@ import {
 
 const solc = require("solc");
 
-export class SolidityCompiler {
-    compile(path: string, text: string): Diagnostic[] {
-        const input = { [path]: text };
-        const output = this.compileContracts({ sources: input });
-        if (!output.errors) return [];
-        return output.errors.map(solcErrToDiagnostic);
-    }
+export function compile(path: string, text: string): Diagnostic[] {
+    const input = { [path]: text };
+    const output = compileContracts({ sources: input });
+    if (!output.errors) return [];
+    return output.errors.map(solcErrToDiagnostic);
+}
 
-    private compileContracts(sources: any): { errors: string[] } {
-        // Setting 1 as second paramater activates the optimiser
-        return solc.compile(sources, 1);
-    }
+function compileContracts(sources: any): { errors: string[] } {
+    // Setting 1 as second paramater activates the optimiser
+    return solc.compile(sources, 1);
 }
 
 function solcErrToDiagnostic(error: string): Diagnostic {
