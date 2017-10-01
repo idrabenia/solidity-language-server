@@ -106,3 +106,11 @@ export function getRootLength(path: string): number {
  * we expect the host to correctly handle paths in our specified format.
  */
 export const directorySeparator = "/";
+
+export function combinePaths(path1: string, path2: string) {
+    if (!(path1 && path1.length)) return path2;
+    if (!(path2 && path2.length)) return path1;
+    if (getRootLength(path2) !== 0) return path2;
+    if (path1.charAt(path1.length - 1) === directorySeparator) return path1 + path2;
+    return path1 + directorySeparator + path2;
+}
