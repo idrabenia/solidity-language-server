@@ -26,6 +26,14 @@ export class ProjectManager {
     }
 
     /**
+     * @param filePath file path (both absolute or relative file paths are accepted)
+     * @return true if there is a fetched file with a given path
+     */
+    hasFile(filePath: string) {
+        return this.inMemoryFs.fileExists(filePath);
+    }
+
+    /**
      * @param rootPath root path as passed to `initialize`
      * @param inMemoryFileSystem File system that keeps structure and contents in memory
      */
