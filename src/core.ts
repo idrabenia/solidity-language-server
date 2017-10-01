@@ -119,3 +119,7 @@ export function isExternalModuleNameRelative(moduleName: string): boolean {
     // An external module name is "relative" if the first term is "." or "..".
     return /^\.\.?($|[\\/])/.test(moduleName);
 }
+
+export function isRootedDiskPath(path: string) {
+    return getRootLength(path) !== 0;
+}
