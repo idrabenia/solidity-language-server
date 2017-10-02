@@ -16,6 +16,7 @@ import {
 
 import { normalizeUri, path2uri, uri2path } from "./core";
 import { getDiagnostics } from "./diagnostic";
+import { FileSystem, FileSystemUpdater, LocalFileSystem } from "./fs";
 import { LanguageClient } from "./languageClient";
 import { LSPLogger, Logger } from "./logging";
 import { InMemoryFileSystem } from "./memfs";
@@ -49,9 +50,19 @@ export class SolidityService {
     protected logger: Logger;
 
     /**
+     * The remote (or local), asynchronous, file system to fetch files from
+     */
+    protected fileSystem: FileSystem;
+
+    /**
      * Holds file contents and workspace structure in memory
      */
     protected inMemoryFileSystem: InMemoryFileSystem;
+
+    /**
+     * Syncs the remote file system with the in-memory file system
+     */
+    protected updater: FileSystemUpdater;
 
     /**
      * Settings synced though `didChangeConfiguration`
@@ -74,9 +85,11 @@ export class SolidityService {
                 this.rootUri += "/";
             }
             this._initializeFileSystems();
+            this.updater = new FileSystemUpdater(this.fileSystem, this.inMemoryFileSystem);
             this.projectManager = new ProjectManager(
                 this.root,
                 this.inMemoryFileSystem,
+                this.updater,
                 this.logger
             );
         }
@@ -121,6 +134,7 @@ export class SolidityService {
     }
 
     protected _initializeFileSystems(): void {
+        this.fileSystem = new LocalFileSystem(this.rootUri);
         this.inMemoryFileSystem = new InMemoryFileSystem(this.root, this.logger);
     }
 
@@ -152,6 +166,7 @@ export class SolidityService {
         const uri = normalizeUri(params.textDocument.uri);
         const text = params.textDocument.text;
         // Ensure files needed for most operations are fetched
+        await this.projectManager.ensureReferencedFiles(uri).toPromise();
         this.projectManager.didOpen(uri, text);
         await new Promise(resolve => setTimeout(resolve, 200));
         this._publishDiagnostics(uri, text);
@@ -185,7 +200,7 @@ export class SolidityService {
      */
     async textDocumentDidSave(params: DidSaveTextDocumentParams): Promise<void> {
         const uri = normalizeUri(params.textDocument.uri);
-
+        await this.projectManager.ensureReferencedFiles(uri).toPromise();
         this.projectManager.didSave(uri);
     }
 
@@ -196,6 +211,9 @@ export class SolidityService {
      */
     async textDocumentDidClose(params: DidCloseTextDocumentParams): Promise<void> {
         const uri = normalizeUri(params.textDocument.uri);
+
+        // Ensure files needed to suggest completions are fetched
+        await this.projectManager.ensureReferencedFiles(uri).toPromise();
 
         this.projectManager.didClose(uri);
 
@@ -230,14 +248,21 @@ export class SolidityService {
      */
     textDocumentCompletion(params: TextDocumentPositionParams): Observable<Operation> {
         const uri = normalizeUri(params.textDocument.uri);
-        const text = this._getSourceText(uri);
-        const completions = getCompletionsAtPosition(text, params.position);
 
-        return Observable.from(completions)
-            .map(item => {
-                return { op: "add", path: "/items/-", value: item } as Operation;
+        // Ensure files needed to suggest completions are fetched
+        return this.projectManager.ensureReferencedFiles(uri, undefined, undefined)
+            .toArray()
+            .mergeMap(() => {
+                const text = this._getSourceText(uri);
+                const completions = getCompletionsAtPosition(text, params.position);
+
+                return Observable.from(completions)
+                    .map(item => {
+                        return { op: "add", path: "/items/-", value: item } as Operation;
+                    })
+                    .startWith({ op: "add", path: "/isIncomplete", value: false } as Operation);
             })
-            .startWith({ op: "add", path: "", value: { isIncomplete: false, items: [] } as CompletionList } as Operation);
+            .startWith({ op: "add", path: "", value: { isIncomplete: true, items: [] } as CompletionList } as Operation);
     }
 
     private _getSourceText(uri: string): string {
