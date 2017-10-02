@@ -101,11 +101,74 @@ export function getRootLength(path: string): number {
 }
 
 /**
+ * Returns the first element of an array if non-empty, `undefined` otherwise.
+ */
+export function firstOrUndefined<T>(array: T[]): T {
+    return (array && array.length > 0
+        ? array[0]
+        : undefined) as T;
+}
+
+/**
+ * Returns the last element of an array if non-empty, `undefined` otherwise.
+ */
+export function lastOrUndefined<T>(array: T[]): T {
+    return (array && array.length > 0
+        ? array[array.length - 1]
+        : undefined) as T;
+}
+
+/**
  * Internally, we represent paths as strings with '/' as the directory separator.
  * When we make system calls (eg: LanguageServiceHost.getDirectory()),
  * we expect the host to correctly handle paths in our specified format.
  */
 export const directorySeparator = "/";
+const directorySeparatorCharCode = CharacterCodes.slash;
+
+export function normalizeSlashes(path: string): string {
+    return path.replace(/\\/g, "/");
+}
+
+function getNormalizedParts(normalizedSlashedPath: string, rootLength: number): string[] {
+    const parts = normalizedSlashedPath.substr(rootLength).split(directorySeparator);
+    const normalized: string[] = [];
+    for (const part of parts) {
+        if (part !== ".") {
+            if (part === ".." && normalized.length > 0 && lastOrUndefined(normalized) !== "..") {
+                normalized.pop();
+            }
+            else {
+                // A part may be an empty string (which is 'falsy') if the path had consecutive slashes,
+                // e.g. "path//file.ts".  Drop these before re-joining the parts.
+                if (part) {
+                    normalized.push(part);
+                }
+            }
+        }
+    }
+
+    return normalized;
+}
+
+/** A path ending with '/' refers to a directory only, never a file. */
+export function pathEndsWithDirectorySeparator(path: string): boolean {
+    return path.charCodeAt(path.length - 1) === directorySeparatorCharCode;
+}
+
+export function normalizePath(path: string): string {
+    path = normalizeSlashes(path);
+    const rootLength = getRootLength(path);
+    const root = path.substr(0, rootLength);
+    const normalized = getNormalizedParts(path, rootLength);
+    if (normalized.length) {
+        const joinedParts = root + normalized.join(directorySeparator);
+        return pathEndsWithDirectorySeparator(path) ? joinedParts + directorySeparator : joinedParts;
+    }
+    else {
+        return root;
+    }
+}
 
 export function combinePaths(path1: string, path2: string) {
     if (!(path1 && path1.length)) return path2;
