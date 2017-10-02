@@ -7,6 +7,7 @@ import { Logger, NoopLogger } from "./logging";
 import { InMemoryFileSystem } from "./memfs";
 import { resolveModuleName } from "./moduleNameResolver";
 import { preProcessFile } from "./services/preProcessFile";
+import { LanguageServiceHost } from "./services/types";
 
 export class ProjectManager {
     /**
@@ -173,5 +174,117 @@ export class ProjectManager {
             .refCount();
         this.referencedFiles.set(uri, observable);
         return observable;
+    }
+}
+
+/**
+ * Implementaton of LanguageServiceHost that works with in-memory file system.
+ * It takes file content from local cache and provides it to TS compiler on demand
+ *
+ * @implements LanguageServiceHost
+ */
+export class InMemoryLanguageServiceHost implements LanguageServiceHost {
+
+    complete: boolean;
+
+    /**
+     * Root path
+     */
+    private rootPath: string;
+
+    /**
+     * Local file cache where we looking for file content
+     */
+    private fs: InMemoryFileSystem;
+
+    /**
+     * Current list of files that were implicitly added to project
+     * (every time when we need to extract data from a file that we haven't touched yet).
+     * Each item is a relative file path
+     */
+    private filePaths: string[];
+
+    /**
+     * Current project version. When something significant is changed, incrementing it to signal Solidity compiler that
+     * files should be updated and cached data should be invalidated
+     */
+    private projectVersion: number;
+
+    /**
+     * Tracks individual files versions to invalidate Solidity compiler data when single file is changed. Keys are URIs
+     */
+    private versions: Map<string, number>;
+
+    constructor(rootPath: string, fs: InMemoryFileSystem, versions: Map<string, number>, private logger: Logger = new NoopLogger()) {
+        this.rootPath = rootPath;
+        this.fs = fs;
+        this.versions = versions;
+        this.projectVersion = 1;
+        this.filePaths = [];
+    }
+
+    /**
+     * TypeScript uses this method (when present) to compare project's version
+     * with the last known one to decide if internal data should be synchronized
+     */
+    getProjectVersion(): string {
+        return "" + this.projectVersion;
+    }
+
+    getNewLine(): string {
+        // Although this is optional, language service was sending edits with carriage returns if not specified.
+        // TODO: combine with the FormatOptions defaults.
+        return "\n";
+    }
+
+    /**
+     * Incrementing current project version, telling TS compiler to invalidate internal data
+     */
+    incProjectVersion() {
+        this.projectVersion++;
+    }
+
+    getScriptFileNames(): string[] {
+        return this.filePaths;
+    }
+
+    /**
+     * Adds a file and increments project version, used in conjunction with getProjectVersion()
+     * which may be called by TypeScript to check if internal data is up to date
+     *
+     * @param filePath relative file path
+     */
+    addFile(filePath: string) {
+        this.filePaths.push(filePath);
+        this.incProjectVersion();
+    }
+
+    /**
+     * @param fileName absolute file path
+     */
+    getScriptVersion(filePath: string): string {
+        const uri = path2uri(filePath);
+        let version = this.versions.get(uri);
+        if (!version) {
+            version = 1;
+            this.versions.set(uri, version);
+        }
+        return "" + version;
+    }
+
+    getCurrentDirectory(): string {
+        return this.rootPath;
+    }
+
+    trace(_message: string) {
+        // empty
+    }
+
+    log(_message: string) {
+        // empty
+    }
+
+    error(message: string) {
+        this.logger.error(message);
     }
 }
