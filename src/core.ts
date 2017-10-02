@@ -186,3 +186,11 @@ export function isExternalModuleNameRelative(moduleName: string): boolean {
 export function isRootedDiskPath(path: string) {
     return getRootLength(path) !== 0;
 }
+
+/**
+ * Normalizes path to match POSIX standard (slashes)
+ * This conversion should only be necessary to convert windows paths when calling TS APIs.
+ */
+export function toUnixPath(filePath: string): string {
+    return filePath.replace(/\\/g, "/");
+}
