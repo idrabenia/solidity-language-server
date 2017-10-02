@@ -1,6 +1,6 @@
 import { EventEmitter } from "events";
 
-import { path2uri, uri2path } from "./core";
+import { FileSystemEntries, matchFiles, path2uri, uri2path } from "./core";
 import { Logger, NoopLogger } from "./logging";
 
 /**
@@ -188,6 +188,46 @@ export class InMemoryFileSystem extends EventEmitter {
     didChange(uri: string, text: string) {
         this.overlay.set(uri, text);
     }
+
+    /**
+     * Called by Solidity service to scan virtual directory when Solidity service looks for source files that belong to a project
+     */
+    readDirectory(rootDir: string, extensions: string[], excludes: string[], includes: string[]): string[] {
+        return matchFiles(rootDir,
+            extensions,
+            excludes,
+            includes,
+            true,
+            this.path,
+            p => this.getFileSystemEntries(p));
+    }
+
+    /**
+     * Called by Solidity service to scan virtual directory when Solidity service looks for source files that belong to a project
+     */
+    getFileSystemEntries(path: string): FileSystemEntries {
+        const ret: { files: string[], directories: string[] } = { files: [], directories: [] };
+        let node = this.rootNode;
+        const components = path.split("/").filter(c => c);
+        if (components.length !== 1 || components[0]) {
+            for (const component of components) {
+                const n = node.children.get(component);
+                if (!n) {
+                    return ret;
+                }
+                node = n;
+            }
+        }
+        node.children.forEach((value, name) => {
+            if (value.file) {
+                ret.files.push(name);
+            } else {
+                ret.directories.push(name);
+            }
+        });
+        return ret;
+    }
+
 
     trace(message: string) {
         this.logger.log(message);
