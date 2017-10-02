@@ -3,6 +3,7 @@ import { ResolvedModule, ResolvedModuleWithFailedLookupLocations } from "./types
 
 export interface ModuleResolutionHost {
     fileExists(fileName: string): boolean;
+    readFile(fileName: string): string;
 }
 
 /** Array that is only intended to be pushed to, never read. */
