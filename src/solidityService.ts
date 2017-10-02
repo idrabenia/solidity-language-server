@@ -8,7 +8,6 @@ import {
     DidCloseTextDocumentParams,
     DidOpenTextDocumentParams,
     DidSaveTextDocumentParams,
-    InitializeParams,
     InitializeResult,
     TextDocumentPositionParams,
     TextDocumentSyncKind
@@ -16,11 +15,12 @@ import {
 
 import { normalizeUri, path2uri, uri2path } from "./core";
 import { getDiagnostics, soliumDefaultRules } from "./diagnostics";
-import { FileSystem, FileSystemUpdater, LocalFileSystem } from "./fs";
+import { FileSystem, FileSystemUpdater, LocalFileSystem, RemoteFileSystem } from "./fs";
 import { LanguageClient } from "./languageClient";
 import { LSPLogger, Logger } from "./logging";
 import { InMemoryFileSystem } from "./memfs";
 import { ProjectManager } from "./projectManager";
+import { InitializeParams } from "./requestType";
 import { getCompletionsAtPosition } from "./services/completions";
 
 export interface SolidityServiceOptions {
@@ -83,7 +83,7 @@ export class SolidityService {
             if (!this.rootUri.endsWith("/")) {
                 this.rootUri += "/";
             }
-            this._initializeFileSystems();
+            this._initializeFileSystems(!(params.capabilities.xcontentProvider && params.capabilities.xfilesProvider));
             this.updater = new FileSystemUpdater(this.fileSystem, this.inMemoryFileSystem);
             this.projectManager = new ProjectManager(
                 this.root,
@@ -132,8 +132,14 @@ export class SolidityService {
         // No op.
     }
 
-    protected _initializeFileSystems(): void {
-        this.fileSystem = new LocalFileSystem(this.rootUri);
+    /**
+     * Initializes the remote file system and in-memory file system.
+     * Can be overridden
+     *
+     * @param accessDisk Whether the language server is allowed to access the local file system
+     */
+    protected _initializeFileSystems(accessDisk: boolean): void {
+        this.fileSystem = accessDisk ? new LocalFileSystem(this.rootUri) : new RemoteFileSystem(this.client);
         this.inMemoryFileSystem = new InMemoryFileSystem(this.root, this.logger);
     }
 

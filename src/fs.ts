@@ -4,6 +4,7 @@ import * as fs from "mz/fs";
 import Semaphore from "semaphore-async-await";
 
 import { normalizeUri, uri2path } from "./core";
+import { LanguageClient } from "./languageClient";
 import { InMemoryFileSystem } from "./memfs";
 
 export interface FileSystem {
@@ -23,6 +24,30 @@ export interface FileSystem {
      */
     getTextDocumentContent(uri: string): Observable<string>;
 }
+
+export class RemoteFileSystem implements FileSystem {
+
+    constructor(private client: LanguageClient) { }
+
+    /**
+     * The files request is sent from the server to the client to request a list of all files in the workspace or inside the directory of the base parameter, if given.
+     * A language server can use the result to index files by filtering and doing a content request for each text document of interest.
+     */
+    getWorkspaceFiles(base?: string): Observable<string> {
+        return this.client.workspaceXfiles({ base })
+            .mergeMap(textDocuments => textDocuments)
+            .map(textDocument => normalizeUri(textDocument.uri));
+    }
+
+    /**
+     * The content request is sent from the server to the client to request the current content of any text document. This allows language servers to operate without accessing the file system directly.
+     */
+    getTextDocumentContent(uri: string): Observable<string> {
+        return this.client.textDocumentXcontent({ textDocument: { uri } })
+            .map(textDocument => textDocument.text);
+    }
+}
+
 
 export class LocalFileSystem implements FileSystem {
 
