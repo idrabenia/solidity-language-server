@@ -133,3 +133,17 @@ export const enum CharacterCodes {
     tab = 0x09,                   // \t
     verticalTab = 0x0B,           // \v
 }
+
+/**
+ * Represents the result of module resolution.
+ */
+export interface ResolvedModule {
+    /** Path of the file the module was resolved to. */
+    resolvedFileName: string;
+}
+
+export interface ResolvedModuleWithFailedLookupLocations {
+    resolvedModule: ResolvedModule | undefined;
+    /* @internal */
+    failedLookupLocations: string[];
+}
