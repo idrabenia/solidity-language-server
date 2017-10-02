@@ -6,7 +6,14 @@ import {
 const solc = require("solc");
 const Solium = require("solium");
 
-export function compile(path: string, text: string): Diagnostic[] {
+export function getDiagnostics(path: string, text: string): Diagnostic[] {
+    const compilerDiagnostics = getCompilerDiagnostics(path, text);
+    const linterDiagnostics = getLinterDiagnostics(text);
+
+    return compilerDiagnostics.concat(linterDiagnostics);
+}
+
+function getCompilerDiagnostics(path: string, text: string): Diagnostic[] {
     const input = { [path]: text };
     const output = compileContracts({ sources: input });
     if (!output.errors) return [];
@@ -71,7 +78,7 @@ export const soliumDefaultRules = {
     "whitespace": true
 };
 
-export function lint(text: string, rules = soliumDefaultRules): Diagnostic[] {
+function getLinterDiagnostics(text: string, rules = soliumDefaultRules): Diagnostic[] {
     try {
         const errorObjects = Solium.lint(text, { rules });
         return errorObjects.map(soliumErrObjectToDiagnostic);

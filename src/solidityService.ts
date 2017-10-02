@@ -15,14 +15,13 @@ import {
 } from "vscode-languageserver";
 
 import { normalizeUri, path2uri, uri2path } from "./core";
-import { getDiagnostics } from "./diagnostic";
+import { getDiagnostics, soliumDefaultRules } from "./diagnostics";
 import { FileSystem, FileSystemUpdater, LocalFileSystem } from "./fs";
 import { LanguageClient } from "./languageClient";
 import { LSPLogger, Logger } from "./logging";
 import { InMemoryFileSystem } from "./memfs";
 import { ProjectManager } from "./projectManager";
 import { getCompletionsAtPosition } from "./services/completions";
-import { soliumDefaultRules } from "./solidity";
 
 export interface SolidityServiceOptions {
 }
