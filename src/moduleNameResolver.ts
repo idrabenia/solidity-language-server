@@ -1,10 +1,5 @@
 import { combinePaths, getDirectoryPath, isExternalModuleNameRelative, isRootedDiskPath, normalizePath } from "./core";
-import { ResolvedModule, ResolvedModuleWithFailedLookupLocations } from "./types";
-
-export interface ModuleResolutionHost {
-    fileExists(fileName: string): boolean;
-    readFile(fileName: string): string;
-}
+import { ModuleResolutionHost, ResolvedModule, ResolvedModuleWithFailedLookupLocations } from "./types";
 
 /** Array that is only intended to be pushed to, never read. */
 export interface Push<T> {

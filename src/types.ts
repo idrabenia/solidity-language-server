@@ -1,3 +1,8 @@
+export interface ModuleResolutionHost {
+    fileExists(fileName: string): boolean;
+    readFile(fileName: string): string;
+}
+
 export const enum CharacterCodes {
     nullCharacter = 0,
     maxAsciiCharacter = 0x7F,

@@ -2,7 +2,7 @@ import { EventEmitter } from "events";
 
 import { FileSystemEntries, matchFiles, path2uri, uri2path } from "./core";
 import { Logger, NoopLogger } from "./logging";
-import { ModuleResolutionHost } from "./moduleNameResolver";
+import { ModuleResolutionHost } from "./types";
 
 /**
  * In-memory file cache node which represents either a folder or a file.
