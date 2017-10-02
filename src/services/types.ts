@@ -1,3 +1,16 @@
+import {
+    CompletionItem,
+    Position
+} from "vscode-languageserver";
+
+//
+// Public services of a language service instance associated
+// with a language service host instance
+//
+export interface LanguageService {
+    getCompletionsAtPosition(fileName: string, position: Position): CompletionItem[];
+}
+
 //
 // Public interface of the host of a language service instance.
 //

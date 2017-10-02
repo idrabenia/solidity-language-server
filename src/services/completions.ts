@@ -5,6 +5,8 @@ import {
     Position
 } from "vscode-languageserver";
 
+import { LanguageServiceHost } from "./types";
+
 const solparse = require("solparse");
 
 function getGlobalFunctionCompletions(): CompletionItem[] {
@@ -144,15 +146,19 @@ function getUnitCompletions(): CompletionItem[] {
     return _.concat(etherUnitCompletions, timeUnitCompletions);
 }
 
-export function getCompletionsAtPosition(text: string, position: Position): CompletionItem[] {
-    const lineTexts = text.split(/\r?\n/g);
-    const lineText = lineTexts[position.line];
-    const { triggeredByDot, wordEndCharacter } = isCompletionTriggeredByDot(lineText, position.character);
-    if (triggeredByDot) {
-        return getContextualCompletions(lineText, wordEndCharacter);
-    } else {
-        return getAllCompletions(text);
+export function getCompletionsAtPosition(host: LanguageServiceHost, fileName: string, position: Position): CompletionItem[] {
+    if (host.readFile) {
+        const text = host.readFile(fileName);
+        const lineTexts = text.split(/\r?\n/g);
+        const lineText = lineTexts[position.line];
+        const { triggeredByDot, wordEndCharacter } = isCompletionTriggeredByDot(lineText, position.character);
+        if (triggeredByDot) {
+            return getContextualCompletions(lineText, wordEndCharacter);
+        } else {
+            return getAllCompletions(text);
+        }
     }
+    return [];
 }
 
 function getAllCompletions(text: string): CompletionItem[] {

@@ -21,7 +21,6 @@ import { LSPLogger, Logger } from "./logging";
 import { InMemoryFileSystem } from "./memfs";
 import { ProjectManager } from "./projectManager";
 import { InitializeParams } from "./requestType";
-import { getCompletionsAtPosition } from "./services/completions";
 
 export interface SolidityServiceOptions {
 }
@@ -258,8 +257,9 @@ export class SolidityService {
         return this.projectManager.ensureReferencedFiles(uri, undefined, undefined)
             .toArray()
             .mergeMap(() => {
-                const text = this._getSourceText(uri);
-                const completions = getCompletionsAtPosition(text, params.position);
+                const fileName: string = uri2path(uri);
+                const configuration = this.projectManager.getConfiguration();
+                const completions = configuration.getService().getCompletionsAtPosition(fileName, params.position);
 
                 return Observable.from(completions)
                     .map(item => {
@@ -268,9 +268,5 @@ export class SolidityService {
                     .startWith({ op: "add", path: "/isIncomplete", value: false } as Operation);
             })
             .startWith({ op: "add", path: "", value: { isIncomplete: true, items: [] } as CompletionList } as Operation);
-    }
-
-    private _getSourceText(uri: string): string {
-        return this.projectManager.getFs().getContent(uri);
     }
 }

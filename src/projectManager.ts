@@ -7,7 +7,8 @@ import { Logger, NoopLogger } from "./logging";
 import { InMemoryFileSystem } from "./memfs";
 import { resolveModuleName } from "./moduleNameResolver";
 import { preProcessFile } from "./services/preProcessFile";
-import { LanguageServiceHost } from "./services/types";
+import { createLanguageService } from "./services/services";
+import { LanguageService, LanguageServiceHost } from "./services/types";
 
 export class ProjectManager {
     /**
@@ -46,10 +47,16 @@ export class ProjectManager {
         return this.inMemoryFs.fileExists(filePath);
     }
 
+    getConfiguration(): ProjectConfiguration {
+        return this.config;
+    }
+
     /**
      * A URI Map from file to files referenced by the file, so files only need to be pre-processed once
      */
     private referencedFiles = new Map<string, Observable<string>>();
+
+    private config: ProjectConfiguration;
 
     /**
      * @param rootPath root path as passed to `initialize`
@@ -65,6 +72,13 @@ export class ProjectManager {
         this.updater = updater;
         this.inMemoryFs = inMemoryFileSystem;
         this.versions = new Map<string, number>();
+
+        const trimmedRootPath = this.rootPath.replace(/\/+$/, "");
+        this.config = new ProjectConfiguration(
+            this.inMemoryFs,
+            trimmedRootPath,
+            this.versions,
+            this.logger);
     }
 
     /**
@@ -259,6 +273,10 @@ export class InMemoryLanguageServiceHost implements LanguageServiceHost {
         this.incProjectVersion();
     }
 
+    readFile(filePath: string) {
+        return this.fs.readFile(filePath);
+    }
+
     /**
      * @param fileName absolute file path
      */
@@ -286,5 +304,103 @@ export class InMemoryLanguageServiceHost implements LanguageServiceHost {
 
     error(message: string) {
         this.logger.error(message);
+    }
+}
+
+/**
+ * ProjectConfiguration instances track the compiler configuration
+ * and state for a single Solidity project. It represents the world of
+ * the view as presented to the compiler.
+ *
+ * For efficiency, a ProjectConfiguration instance may hide some files
+ * from the compiler, preventing them from being parsed and
+ * type-checked. Depending on the use, the caller should call one of
+ * the ensure* methods to ensure that the appropriate files have been
+ * made available to the compiler before calling any other methods on
+ * the ProjectConfiguration or its public members. By default, no
+ * files are parsed.
+ */
+export class ProjectConfiguration {
+
+    private service?: LanguageService;
+
+    /**
+     * Object Solidity service will use to fetch content of source files
+     */
+    private host?: InMemoryLanguageServiceHost;
+
+    /**
+     * Local file cache
+     */
+    private fs: InMemoryFileSystem;
+
+    /**
+     * Relative source file path (relative) -> version associations
+     */
+    private versions: Map<string, number>;
+
+    /**
+     * Root file path, relative to workspace hierarchy root
+     */
+    private rootFilePath: string;
+
+    private initialized = false;
+
+    /**
+     * @param fs file system to use
+     * @param rootFilePath root file path, absolute
+     * @param configFilePath configuration file path, absolute
+     * @param configContent optional configuration content to use instead of reading configuration file)
+     */
+    constructor(
+        fs: InMemoryFileSystem,
+        rootFilePath: string,
+        versions: Map<string, number>,
+        private logger: Logger = new NoopLogger()
+    ) {
+        this.fs = fs;
+        this.versions = versions;
+        this.rootFilePath = rootFilePath;
+        this.host = new InMemoryLanguageServiceHost(
+            this.fs.path,
+            this.fs,
+            this.versions,
+            this.logger
+        );
+        this.service = createLanguageService(this.host);
+        this.initialized = true;
+    }
+
+    /**
+     * reset resets a ProjectConfiguration to its state immediately
+     * after construction. It should be called whenever the underlying
+     * local filesystem (fs) has changed, and so the
+     * ProjectConfiguration can no longer assume its state reflects
+     * that of the underlying files.
+     */
+    reset(): void {
+        this.initialized = false;
+        this.service = undefined;
+        this.host = undefined;
+    }
+
+    /**
+     * @return language service object
+     */
+    getService(): LanguageService {
+        if (!this.service) {
+            throw new Error("project is uninitialized");
+        }
+        return this.service;
+    }
+
+    /**
+     * @return language service host that TS service uses to read the data
+     */
+    getHost(): InMemoryLanguageServiceHost {
+        if (!this.host) {
+            throw new Error("project is uninitialized");
+        }
+        return this.host;
     }
 }
