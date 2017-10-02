@@ -1,7 +1,7 @@
 import { combinePaths, getDirectoryPath, isExternalModuleNameRelative, isRootedDiskPath, normalizePath } from "./core";
 import { ResolvedModule, ResolvedModuleWithFailedLookupLocations } from "./types";
 
-interface ModuleResolutionHost {
+export interface ModuleResolutionHost {
     fileExists(fileName: string): boolean;
 }
 

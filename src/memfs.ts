@@ -2,6 +2,7 @@ import { EventEmitter } from "events";
 
 import { FileSystemEntries, matchFiles, path2uri, uri2path } from "./core";
 import { Logger, NoopLogger } from "./logging";
+import { ModuleResolutionHost } from "./moduleNameResolver";
 
 /**
  * In-memory file cache node which represents either a folder or a file.
@@ -11,7 +12,7 @@ export interface FileSystemNode {
     children: Map<string, FileSystemNode>;
 }
 
-export class InMemoryFileSystem extends EventEmitter {
+export class InMemoryFileSystem extends EventEmitter implements ModuleResolutionHost {
     /**
      * Contains a Map of all URIs that exist in the workspace, optionally with a content.
      * File contents for URIs in it do not neccessarily have to be fetched already.
