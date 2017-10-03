@@ -14,7 +14,7 @@ import {
 } from "vscode-languageserver";
 
 import { normalizeUri, path2uri, uri2path } from "./core";
-import { getDiagnostics, soliumDefaultRules } from "./diagnostics";
+import { soliumDefaultRules } from "./diagnostics";
 import { FileSystem, FileSystemUpdater, LocalFileSystem, RemoteFileSystem } from "./fs";
 import { LanguageClient } from "./languageClient";
 import { LSPLogger, Logger } from "./logging";
@@ -173,7 +173,7 @@ export class SolidityService {
         await this.projectManager.ensureReferencedFiles(uri).toPromise();
         this.projectManager.didOpen(uri, text);
         await new Promise(resolve => setTimeout(resolve, 200));
-        this._publishDiagnostics(uri, text);
+        this._publishDiagnostics(uri);
     }
 
     /**
@@ -195,7 +195,7 @@ export class SolidityService {
         }
         this.projectManager.didChange(uri, text);
         await new Promise(resolve => setTimeout(resolve, 200));
-        this._publishDiagnostics(uri, text);
+        this._publishDiagnostics(uri);
     }
 
     /**
@@ -230,8 +230,13 @@ export class SolidityService {
      *
      * @param uri URI of the file to check
      */
-    private _publishDiagnostics(uri: string, text: string): void {
-        const diagnostics = getDiagnostics(uri2path(uri), text);
+    private _publishDiagnostics(uri: string): void {
+        const config = this.projectManager.getParentConfiguration(uri);
+        if (!config) {
+            return;
+        }
+        const fileName = uri2path(uri);
+        const diagnostics = config.getService().getDiagnostics(fileName);
         this.client.textDocumentPublishDiagnostics({ uri, diagnostics });
     }
 

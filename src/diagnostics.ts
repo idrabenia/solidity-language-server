@@ -3,21 +3,27 @@ import {
     DiagnosticSeverity
 } from "vscode-languageserver";
 
+import { LanguageServiceHost } from "./services/types";
+
 const solc = require("solc");
 const Solium = require("solium");
 
-export function getDiagnostics(path: string, text: string): Diagnostic[] {
-    const compilerDiagnostics = getCompilerDiagnostics(path, text);
-    const linterDiagnostics = getLinterDiagnostics(text);
+export function getDiagnostics(host: LanguageServiceHost, fileName: string): Diagnostic[] {
+    const compilerDiagnostics = getCompilerDiagnostics(host, fileName);
+    const linterDiagnostics = getLinterDiagnostics(host, fileName);
 
     return compilerDiagnostics.concat(linterDiagnostics);
 }
 
-function getCompilerDiagnostics(path: string, text: string): Diagnostic[] {
-    const input = { [path]: text };
-    const output = compileContracts({ sources: input });
-    if (!output.errors) return [];
-    return output.errors.map(solcErrToDiagnostic);
+function getCompilerDiagnostics(host: LanguageServiceHost, fileName: string): Diagnostic[] {
+    if (host.readFile) {
+        const text = host.readFile(fileName);
+        const input = { [fileName]: text };
+        const output = compileContracts({ sources: input });
+        if (!output.errors) return [];
+        return output.errors.map(solcErrToDiagnostic);
+    }
+    return [];
 }
 
 function compileContracts(sources: any): { errors: string[] } {
@@ -78,8 +84,13 @@ export const soliumDefaultRules = {
     "whitespace": true
 };
 
-function getLinterDiagnostics(text: string, rules = soliumDefaultRules): Diagnostic[] {
+function getLinterDiagnostics(host: LanguageServiceHost, fileName: string, rules = soliumDefaultRules): Diagnostic[] {
+    if (!host.readFile) {
+        return [];
+    }
+
     try {
+        const text = host.readFile(fileName);
         const errorObjects = Solium.lint(text, { rules });
         return errorObjects.map(soliumErrObjectToDiagnostic);
     } catch (err) {

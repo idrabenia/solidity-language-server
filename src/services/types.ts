@@ -1,5 +1,6 @@
 import {
     CompletionItem,
+    Diagnostic,
     Position
 } from "vscode-languageserver";
 
@@ -9,6 +10,7 @@ import {
 //
 export interface LanguageService {
     getCompletionsAtPosition(fileName: string, position: Position): CompletionItem[];
+    getDiagnostics(path: string): Diagnostic[];
 }
 
 //
