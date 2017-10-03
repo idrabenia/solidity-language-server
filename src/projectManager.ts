@@ -87,7 +87,7 @@ export class ProjectManager {
      * @param uri file's URI
      * @param text file's content
      */
-    didOpen(uri: string, text: string) {
+    public didOpen(uri: string, text: string) {
         this.didChange(uri, text);
     }
 
@@ -95,7 +95,7 @@ export class ProjectManager {
      * Called when file was closed by client. Current implementation invalidates compiled version
      * @param uri file's URI
      */
-    didClose(uri: string) {
+    public didClose(uri: string) {
         this.inMemoryFs.didClose(uri);
         let version = this.versions.get(uri) || 0;
         this.versions.set(uri, ++version);
@@ -106,7 +106,7 @@ export class ProjectManager {
      * @param uri file's URI
      * @param text file's content
      */
-    didChange(uri: string, text: string) {
+    public didChange(uri: string, text: string) {
         this.inMemoryFs.didChange(uri, text);
         let version = this.versions.get(uri) || 0;
         this.versions.set(uri, ++version);
@@ -116,7 +116,7 @@ export class ProjectManager {
      * Called when file was saved by client
      * @param uri file's URI
      */
-    didSave(uri: string) {
+    public didSave(uri: string) {
         this.inMemoryFs.didSave(uri);
     }
 
@@ -137,7 +137,7 @@ export class ProjectManager {
      * @param childOf OpenTracing parent span for tracing
      * @return Observable of file URIs ensured
      */
-    ensureReferencedFiles(uri: string, maxDepth = 30, ignore = new Set<string>()): Observable<string> {
+    public ensureReferencedFiles(uri: string, maxDepth = 30, ignore = new Set<string>()): Observable<string> {
         ignore.add(uri);
         // If max depth was reached, don't go any further
         return Observable.defer(() => maxDepth === 0 ? Observable.empty<never>() : this.resolveReferencedFiles(uri))
@@ -199,7 +199,7 @@ export class ProjectManager {
  */
 export class InMemoryLanguageServiceHost implements LanguageServiceHost {
 
-    complete: boolean;
+    public complete: boolean;
 
     /**
      * Root path
@@ -241,11 +241,11 @@ export class InMemoryLanguageServiceHost implements LanguageServiceHost {
      * TypeScript uses this method (when present) to compare project's version
      * with the last known one to decide if internal data should be synchronized
      */
-    getProjectVersion(): string {
+    public getProjectVersion(): string {
         return "" + this.projectVersion;
     }
 
-    getNewLine(): string {
+    public getNewLine(): string {
         // Although this is optional, language service was sending edits with carriage returns if not specified.
         // TODO: combine with the FormatOptions defaults.
         return "\n";
@@ -254,11 +254,11 @@ export class InMemoryLanguageServiceHost implements LanguageServiceHost {
     /**
      * Incrementing current project version, telling TS compiler to invalidate internal data
      */
-    incProjectVersion() {
+    public incProjectVersion() {
         this.projectVersion++;
     }
 
-    getScriptFileNames(): string[] {
+    public getScriptFileNames(): string[] {
         return this.filePaths;
     }
 
@@ -268,23 +268,23 @@ export class InMemoryLanguageServiceHost implements LanguageServiceHost {
      *
      * @param filePath relative file path
      */
-    addFile(filePath: string) {
+    public addFile(filePath: string) {
         this.filePaths.push(filePath);
         this.incProjectVersion();
     }
 
-    readFile(filePath: string, _encoding?: string): string {
+    public readFile(filePath: string, _encoding?: string): string {
         return this.fs.readFile(filePath);
     }
 
-    fileExists(path: string): boolean {
+    public fileExists(path: string): boolean {
         return this.fs.fileExists(path);
     }
 
     /**
      * @param fileName absolute file path
      */
-    getScriptVersion(filePath: string): string {
+    public getScriptVersion(filePath: string): string {
         const uri = path2uri(filePath);
         let version = this.versions.get(uri);
         if (!version) {
@@ -294,19 +294,19 @@ export class InMemoryLanguageServiceHost implements LanguageServiceHost {
         return "" + version;
     }
 
-    getCurrentDirectory(): string {
+    public getCurrentDirectory(): string {
         return this.rootPath;
     }
 
-    trace(_message: string) {
+    public trace(_message: string) {
         // empty
     }
 
-    log(_message: string) {
+    public log(_message: string) {
         // empty
     }
 
-    error(message: string) {
+    public error(message: string) {
         this.logger.error(message);
     }
 }
@@ -382,7 +382,7 @@ export class ProjectConfiguration {
      * ProjectConfiguration can no longer assume its state reflects
      * that of the underlying files.
      */
-    reset(): void {
+    public reset(): void {
         this.initialized = false;
         this.service = undefined;
         this.host = undefined;
@@ -391,7 +391,7 @@ export class ProjectConfiguration {
     /**
      * @return language service object
      */
-    getService(): LanguageService {
+    public getService(): LanguageService {
         if (!this.service) {
             throw new Error("project is uninitialized");
         }
@@ -401,7 +401,7 @@ export class ProjectConfiguration {
     /**
      * @return language service host that TS service uses to read the data
      */
-    getHost(): InMemoryLanguageServiceHost {
+    public getHost(): InMemoryLanguageServiceHost {
         if (!this.host) {
             throw new Error("project is uninitialized");
         }

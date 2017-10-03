@@ -33,7 +33,7 @@ export class RemoteFileSystem implements FileSystem {
      * The files request is sent from the server to the client to request a list of all files in the workspace or inside the directory of the base parameter, if given.
      * A language server can use the result to index files by filtering and doing a content request for each text document of interest.
      */
-    getWorkspaceFiles(base?: string): Observable<string> {
+    public getWorkspaceFiles(base?: string): Observable<string> {
         return this.client.workspaceXfiles({ base })
             .mergeMap(textDocuments => textDocuments)
             .map(textDocument => normalizeUri(textDocument.uri));
@@ -42,7 +42,7 @@ export class RemoteFileSystem implements FileSystem {
     /**
      * The content request is sent from the server to the client to request the current content of any text document. This allows language servers to operate without accessing the file system directly.
      */
-    getTextDocumentContent(uri: string): Observable<string> {
+    public getTextDocumentContent(uri: string): Observable<string> {
         return this.client.textDocumentXcontent({ textDocument: { uri } })
             .map(textDocument => textDocument.text);
     }
@@ -63,7 +63,7 @@ export class LocalFileSystem implements FileSystem {
         return uri2path(uri);
     }
 
-    getWorkspaceFiles(base = this.rootUri): Observable<string> {
+    public getWorkspaceFiles(base = this.rootUri): Observable<string> {
         if (!base.endsWith("/")) {
             base += "/";
         }
@@ -90,7 +90,7 @@ export class LocalFileSystem implements FileSystem {
         });
     }
 
-    getTextDocumentContent(uri: string): Observable<string> {
+    public getTextDocumentContent(uri: string): Observable<string> {
         const filePath = this.resolveUriToPath(uri);
         return Observable.fromPromise(fs.readFile(filePath, "utf8"));
     }
@@ -125,7 +125,7 @@ export class FileSystemUpdater {
      * @param uri URI of the file to fetch
      * @return Observable that completes when the fetch is finished
      */
-    fetch(uri: string): Observable<never> {
+    public fetch(uri: string): Observable<never> {
         // Limit concurrent fetches
         const observable = Observable.fromPromise(this.concurrencyLimit.wait())
             .mergeMap(() => this.remoteFs.getTextDocumentContent(uri))
@@ -149,14 +149,14 @@ export class FileSystemUpdater {
      * @param uri URI of the file to ensure
      * @return Observable that completes when the file was fetched
      */
-    ensure(uri: string): Observable<never> {
+    public ensure(uri: string): Observable<never> {
         return this.fetches.get(uri) || this.fetch(uri);
     }
 
     /**
      * Fetches the file/directory structure for the given directory from the remote file system and saves it in the in-memory file system
      */
-    fetchStructure(): Observable<never> {
+    public fetchStructure(): Observable<never> {
         const observable = this.remoteFs.getWorkspaceFiles(undefined)
             .do(uri => {
                 this.inMemoryFs.add(uri);
@@ -176,7 +176,7 @@ export class FileSystemUpdater {
      *
      * @param span An OpenTracing span for tracing
      */
-    ensureStructure(): Observable<never> {
+    public ensureStructure(): Observable<never> {
         return this.structureFetch || this.fetchStructure();
     }
 
@@ -186,7 +186,7 @@ export class FileSystemUpdater {
      *
      * @param uri URI of the file that changed
      */
-    invalidate(uri: string): void {
+    public invalidate(uri: string): void {
         this.fetches.delete(uri);
     }
 
@@ -194,7 +194,7 @@ export class FileSystemUpdater {
      * Invalidates the structure fetch cache.
      * The next call to `ensureStructure` will do a refetch.
      */
-    invalidateStructure(): void {
+    public invalidateStructure(): void {
         this.structureFetch = undefined;
     }
 }

@@ -22,23 +22,23 @@ export class InMemoryFileSystem extends EventEmitter implements ModuleResolution
     /**
      * Map (URI -> string content) of temporary files made while user modifies local file(s)
      */
-    overlay: Map<string, string>;
+    public overlay: Map<string, string>;
 
     /**
      * Should we take into account register when performing a file name match or not.
      * On Windows when using local file system, file names are case-insensitive.
      */
-    useCaseSensitiveFileNames: boolean;
+    public useCaseSensitiveFileNames: boolean;
 
     /**
      * Root path
      */
-    path: string;
+    public path: string;
 
     /**
      * File tree root
      */
-    rootNode: FileSystemNode;
+    public rootNode: FileSystemNode;
 
     constructor(path: string, private logger: Logger = new NoopLogger()) {
         super();
@@ -50,14 +50,14 @@ export class InMemoryFileSystem extends EventEmitter implements ModuleResolution
     /**
      * Emitted when a file was added
      */
-    on(event: "add", listener: (uri: string, content?: string) => void): this {
+    public on(event: "add", listener: (uri: string, content?: string) => void): this {
         return super.on(event, listener);
     }
 
     /**
      * Returns an IterableIterator for all URIs known to exist in the workspace (content loaded or not)
      */
-    uris(): IterableIterator<string> {
+    public uris(): IterableIterator<string> {
         return this.files.keys();
     }
 
@@ -67,7 +67,7 @@ export class InMemoryFileSystem extends EventEmitter implements ModuleResolution
      * @param uri The URI of the file
      * @param content The optional content
      */
-    add(uri: string, content?: string): void {
+    public add(uri: string, content?: string): void {
         // Make sure not to override existing content with undefined
         if (content !== undefined || !this.files.has(uri)) {
             this.files.set(uri, content);
@@ -98,7 +98,7 @@ export class InMemoryFileSystem extends EventEmitter implements ModuleResolution
      *
      * @param uri URI to a file
      */
-    has(uri: string): boolean {
+    public has(uri: string): boolean {
         return this.files.has(uri) || this.fileExists(uri2path(uri));
     }
 
@@ -107,7 +107,7 @@ export class InMemoryFileSystem extends EventEmitter implements ModuleResolution
      * Will throw an Error if no available in-memory.
      * Use FileSystemUpdater.ensure() to ensure that the file is available.
      */
-    getContent(uri: string): string {
+    public getContent(uri: string): string {
         let content = this.overlay.get(uri);
         if (content === undefined) {
             content = this.files.get(uri);
@@ -123,7 +123,7 @@ export class InMemoryFileSystem extends EventEmitter implements ModuleResolution
      *
      * @param path File path or URI (both absolute or relative file paths are accepted)
      */
-    fileExists(path: string): boolean {
+    public fileExists(path: string): boolean {
         const uri = path2uri(path);
         return this.overlay.has(uri) || this.files.has(uri);
     }
@@ -133,7 +133,7 @@ export class InMemoryFileSystem extends EventEmitter implements ModuleResolution
      * @return file's content in the following order (overlay then cache).
      * If there is no such file, returns empty string to match expected signature
      */
-    readFile(path: string): string {
+    public readFile(path: string): string {
         const content = this.readFileIfExists(path);
         if (content === undefined) {
             this.logger.warn(`readFile ${path} requested by Solidity but content not available`);
@@ -167,7 +167,7 @@ export class InMemoryFileSystem extends EventEmitter implements ModuleResolution
      * Invalidates temporary content denoted by the given URI
      * @param uri file's URI
      */
-    didClose(uri: string) {
+    public didClose(uri: string) {
         this.overlay.delete(uri);
     }
 
@@ -175,7 +175,7 @@ export class InMemoryFileSystem extends EventEmitter implements ModuleResolution
      * Adds temporary content denoted by the given URI
      * @param uri file's URI
      */
-    didSave(uri: string) {
+    public didSave(uri: string) {
         const content = this.overlay.get(uri);
         if (content !== undefined) {
             this.add(uri, content);
@@ -186,14 +186,14 @@ export class InMemoryFileSystem extends EventEmitter implements ModuleResolution
      * Updates temporary content denoted by the given URI
      * @param uri file's URI
      */
-    didChange(uri: string, text: string) {
+    public didChange(uri: string, text: string) {
         this.overlay.set(uri, text);
     }
 
     /**
      * Called by Solidity service to scan virtual directory when Solidity service looks for source files that belong to a project
      */
-    readDirectory(rootDir: string, extensions: string[], excludes: string[], includes: string[]): string[] {
+    public readDirectory(rootDir: string, extensions: string[], excludes: string[], includes: string[]): string[] {
         return matchFiles(rootDir,
             extensions,
             excludes,
@@ -206,7 +206,7 @@ export class InMemoryFileSystem extends EventEmitter implements ModuleResolution
     /**
      * Called by Solidity service to scan virtual directory when Solidity service looks for source files that belong to a project
      */
-    getFileSystemEntries(path: string): FileSystemEntries {
+    public getFileSystemEntries(path: string): FileSystemEntries {
         const ret: { files: string[], directories: string[] } = { files: [], directories: [] };
         let node = this.rootNode;
         const components = path.split("/").filter(c => c);
@@ -230,7 +230,7 @@ export class InMemoryFileSystem extends EventEmitter implements ModuleResolution
     }
 
 
-    trace(message: string) {
+    public trace(message: string) {
         this.logger.log(message);
     }
 }

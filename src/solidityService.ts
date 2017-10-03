@@ -33,12 +33,12 @@ export interface Settings {
 }
 
 export class SolidityService {
-    projectManager: ProjectManager;
+    public projectManager: ProjectManager;
 
     /**
      * The rootPath as passed to `initialize` or converted from `rootUri`
      */
-    root: string;
+    public root: string;
 
     /**
      * The root URI as passed to `initialize` or converted from `rootPath`
@@ -73,7 +73,7 @@ export class SolidityService {
         this.logger = new LSPLogger(client);
     }
 
-    initialize(params: InitializeParams): Observable<Operation> {
+    public initialize(params: InitializeParams): Observable<Operation> {
         if (params.rootUri || params.rootPath) {
             this.root = params.rootPath || uri2path(params.rootUri!);
             this.rootUri = params.rootUri || path2uri(params.rootPath!);
@@ -127,7 +127,7 @@ export class SolidityService {
      * to the server. The server can use the initialized notification for example to dynamically register
      * capabilities.
      */
-    async initialized(): Promise<void> {
+    public async initialized(): Promise<void> {
         // No op.
     }
 
@@ -149,7 +149,7 @@ export class SolidityService {
      *
      * @return Observable of JSON Patches that build a `null` result
      */
-    shutdown(_params = {}): Observable<Operation> {
+    public shutdown(_params = {}): Observable<Operation> {
         return Observable.of({ op: "add", path: "", value: null } as Operation);
     }
 
@@ -157,7 +157,7 @@ export class SolidityService {
      * A notification sent from the client to the server to signal the change of configuration
      * settings.
      */
-    workspaceDidChangeConfiguration(params: DidChangeConfigurationParams): void {
+    public workspaceDidChangeConfiguration(params: DidChangeConfigurationParams): void {
         _.merge(this.settings, params.settings);
     }
 
@@ -166,7 +166,7 @@ export class SolidityService {
      * text documents. The document's truth is now managed by the client and the server must not try
      * to read the document's truth using the document's uri.
      */
-    async textDocumentDidOpen(params: DidOpenTextDocumentParams): Promise<void> {
+    public async textDocumentDidOpen(params: DidOpenTextDocumentParams): Promise<void> {
         const uri = normalizeUri(params.textDocument.uri);
         const text = params.textDocument.text;
         // Ensure files needed for most operations are fetched
@@ -181,7 +181,7 @@ export class SolidityService {
      * text document. In 2.0 the shape of the params has changed to include proper version numbers
      * and language ids.
      */
-    async textDocumentDidChange(params: DidChangeTextDocumentParams): Promise<void> {
+    public async textDocumentDidChange(params: DidChangeTextDocumentParams): Promise<void> {
         const uri = normalizeUri(params.textDocument.uri);
         let text: string | undefined;
         for (const change of params.contentChanges) {
@@ -202,7 +202,7 @@ export class SolidityService {
      * The document save notification is sent from the client to the server when the document was
      * saved in the client.
      */
-    async textDocumentDidSave(params: DidSaveTextDocumentParams): Promise<void> {
+    public async textDocumentDidSave(params: DidSaveTextDocumentParams): Promise<void> {
         const uri = normalizeUri(params.textDocument.uri);
         await this.projectManager.ensureReferencedFiles(uri).toPromise();
         this.projectManager.didSave(uri);
@@ -213,7 +213,7 @@ export class SolidityService {
      * closed in the client. The document's truth now exists where the document's uri points to
      * (e.g. if the document's uri is a file uri the truth now exists on disk).
      */
-    async textDocumentDidClose(params: DidCloseTextDocumentParams): Promise<void> {
+    public async textDocumentDidClose(params: DidCloseTextDocumentParams): Promise<void> {
         const uri = normalizeUri(params.textDocument.uri);
 
         // Ensure files needed to suggest completions are fetched
@@ -250,7 +250,7 @@ export class SolidityService {
      *
      * @return Observable of JSON Patches that build a `CompletionList` result
      */
-    textDocumentCompletion(params: TextDocumentPositionParams): Observable<Operation> {
+    public textDocumentCompletion(params: TextDocumentPositionParams): Observable<Operation> {
         const uri = normalizeUri(params.textDocument.uri);
 
         // Ensure files needed to suggest completions are fetched

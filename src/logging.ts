@@ -29,7 +29,7 @@ export class LSPLogger implements Logger {
      */
     constructor(private client: LanguageClient) { }
 
-    log(...values: any[]): void {
+    public log(...values: any[]): void {
         try {
             this.client.windowLogMessage({ type: MessageType.Log, message: format(values) });
         } catch (err) {
@@ -37,7 +37,7 @@ export class LSPLogger implements Logger {
         }
     }
 
-    info(...values: any[]): void {
+    public info(...values: any[]): void {
         try {
             this.client.windowLogMessage({ type: MessageType.Info, message: format(values) });
         } catch (err) {
@@ -45,7 +45,7 @@ export class LSPLogger implements Logger {
         }
     }
 
-    warn(...values: any[]): void {
+    public warn(...values: any[]): void {
         try {
             this.client.windowLogMessage({ type: MessageType.Warning, message: format(values) });
         } catch (err) {
@@ -53,7 +53,7 @@ export class LSPLogger implements Logger {
         }
     }
 
-    error(...values: any[]): void {
+    public error(...values: any[]): void {
         try {
             this.client.windowLogMessage({ type: MessageType.Error, message: format(values) });
         } catch (err) {

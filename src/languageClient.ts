@@ -113,7 +113,7 @@ export class RemoteLanguageClient {
      * The files request is sent from the server to the client to request a list of all files in the
      * workspace or inside the directory of the `base` parameter, if given.
      */
-    workspaceXfiles(params: WorkspaceFilesParams): Observable<TextDocumentIdentifier[]> {
+    public workspaceXfiles(params: WorkspaceFilesParams): Observable<TextDocumentIdentifier[]> {
         return this.request("workspace/xfiles", params);
     }
 
@@ -132,7 +132,7 @@ export class RemoteLanguageClient {
      * The log message notification is sent from the server to the client to ask
      * the client to log a particular message.
      */
-    windowLogMessage(params: LogMessageParams): void {
+    public windowLogMessage(params: LogMessageParams): void {
         this.notify("window/logMessage", params);
     }
 
@@ -141,7 +141,7 @@ export class RemoteLanguageClient {
      * in a source file
      * @param params The diagnostics to send to the client
      */
-    textDocumentPublishDiagnostics(params: PublishDiagnosticsParams): void {
+    public textDocumentPublishDiagnostics(params: PublishDiagnosticsParams): void {
         this.notify("textDocument/publishDiagnostics", params);
     }
 }

@@ -65,24 +65,30 @@ export class MessageEmitter extends EventEmitter {
     }
 
     /** Emitted when a new JSON RPC message was received on the input stream */
-    on(event: "message", listener: (message: Message) => void): this;
+    public on(event: "message", listener: (message: Message) => void): this;
+
     /** Emitted when the underlying input stream emitted an error */
-    on(event: "error", listener: (error: Error) => void): this;
+    public on(event: "error", listener: (error: Error) => void): this;
+
     /** Emitted when the underlying input stream was closed */
-    on(event: "close", listener: () => void): this;
+    public on(event: "close", listener: () => void): this;
+
     /* istanbul ignore next */
-    on(event: string, listener: (...args: any[]) => void): this {
+    public on(event: string, listener: (...args: any[]) => void): this {
         return super.on(event, listener);
     }
 
     /** Emitted when a new JSON RPC message was received on the input stream */
-    once(event: "message", listener: (message: Message) => void): this;
+    public once(event: "message", listener: (message: Message) => void): this;
+
     /** Emitted when the underlying input stream emitted an error */
-    once(event: "error", listener: (error: Error) => void): this;
+    public once(event: "error", listener: (error: Error) => void): this;
+
     /** Emitted when the underlying input stream was closed */
-    once(event: "close", listener: () => void): this;
+    public once(event: "close", listener: () => void): this;
+
     /* istanbul ignore next */
-    once(event: string, listener: (...args: any[]) => void): this {
+    public once(event: string, listener: (...args: any[]) => void): this {
         return super.on(event, listener);
     }
 }
@@ -113,7 +119,7 @@ export class MessageWriter {
      *
      * @param message A complete JSON RPC message object
      */
-    write(message: RequestMessage | NotificationMessage | ResponseMessage): void {
+    public write(message: RequestMessage | NotificationMessage | ResponseMessage): void {
         if (this.logMessages) {
             this.logger.log("<--", message);
         }
