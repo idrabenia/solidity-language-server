@@ -1,4 +1,5 @@
 import { Observable } from "@reactivex/rxjs";
+import * as glob from "glob";
 import iterate from "iterare";
 import * as _ from "lodash";
 
@@ -93,10 +94,14 @@ export class ProjectManager {
         this.versions = new Map<string, number>();
 
         const trimmedRootPath = this.rootPath.replace(/\/+$/, "");
+        const solidityConfig: any = {
+            include: "**/*.sol"
+        };
         const config = new ProjectConfiguration(
             this.inMemoryFs,
             trimmedRootPath,
             this.versions,
+            solidityConfig,
             this.logger);
         this.configs.set(trimmedRootPath, config);
     }
@@ -208,6 +213,7 @@ export class ProjectManager {
             return;
         }
         config.ensureConfigFile();
+        config.ensureSourceFile(filePath);
         config.getHost().incProjectVersion();
     }
 
@@ -521,6 +527,11 @@ export class ProjectConfiguration {
     private fs: InMemoryFileSystem;
 
     /**
+     * Configuration JSON object. May be used when there is no real configuration file to parse and use
+     */
+    private configContent: any;
+
+    /**
      * Relative source file path (relative) -> version associations
      */
     private versions: Map<string, number>;
@@ -530,6 +541,13 @@ export class ProjectConfiguration {
      */
     private rootFilePath: string;
 
+    /**
+     * List of files that project consist of (based on tsconfig includes/excludes and wildcards).
+     * Each item is a relative file path
+     */
+    private expectedFilePaths = new Set<string>();
+
+    private ensuredAllFiles = false;
     private initialized = false;
 
     /**
@@ -542,10 +560,12 @@ export class ProjectConfiguration {
         fs: InMemoryFileSystem,
         rootFilePath: string,
         versions: Map<string, number>,
+        configContent?: any,
         private logger: Logger = new NoopLogger()
     ) {
         this.fs = fs;
         this.versions = versions;
+        this.configContent = configContent;
         this.rootFilePath = rootFilePath;
     }
 
@@ -553,6 +573,9 @@ export class ProjectConfiguration {
         if (this.initialized) {
             return;
         }
+        const configObject = this.configContent;
+        this.expectedFilePaths = new Set(glob.sync(configObject.include));
+
         this.host = new InMemoryLanguageServiceHost(
             this.fs.path,
             this.fs,
@@ -572,8 +595,10 @@ export class ProjectConfiguration {
      */
     public reset(): void {
         this.initialized = false;
+        this.ensuredAllFiles = false;
         this.service = undefined;
         this.host = undefined;
+        this.expectedFilePaths = new Set();
     }
 
     /**
@@ -598,8 +623,34 @@ export class ProjectConfiguration {
 
     /**
      * Ensures we are ready to process files from a given sub-project
-    */
+     */
     public ensureConfigFile(): void {
         this.init();
+    }
+
+    /**
+     * Ensures a single file is available to the LanguageServiceHost
+     * @param filePath
+     */
+    public ensureSourceFile(filePath: string): void {
+        this.getHost().addFile(filePath);
+    }
+
+    /**
+     * Ensures we added all project's source file
+     */
+    public ensureAllFiles(): void {
+        if (this.ensuredAllFiles) {
+            return;
+        }
+        this.init();
+        if (this.getHost().complete) {
+            return;
+        }
+        for (const fileName of this.expectedFilePaths) {
+            this.getHost().addFile(fileName);
+        }
+        this.getHost().complete = true;
+        this.ensuredAllFiles = true;
     }
 }
