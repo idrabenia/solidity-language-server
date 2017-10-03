@@ -273,7 +273,7 @@ export class InMemoryLanguageServiceHost implements LanguageServiceHost {
         this.incProjectVersion();
     }
 
-    readFile(filePath: string) {
+    readFile(filePath: string, _encoding?: string): string {
         return this.fs.readFile(filePath);
     }
 
