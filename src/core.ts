@@ -527,3 +527,15 @@ function fileExtensionIsAny(path: string, extensions: string[]): boolean {
 
     return false;
 }
+
+const solidityPattern = /\.sol$/;
+
+export function isSolidityFile(filename: string): boolean {
+    return solidityPattern.test(filename);
+}
+
+const packageJsonPattern = /(^|\/)package\.json$/;
+
+export function isPackageJsonFile(filename: string): boolean {
+    return packageJsonPattern.test(filename);
+}
