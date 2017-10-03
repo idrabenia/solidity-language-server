@@ -157,7 +157,7 @@ export interface ResolvedModule {
 }
 
 export interface ResolvedModuleWithFailedLookupLocations {
-    resolvedModule: ResolvedModule | undefined;
+    readonly resolvedModule: ResolvedModule | undefined;
     /* @internal */
-    failedLookupLocations: string[];
+    readonly failedLookupLocations: ReadonlyArray<string>;
 }
