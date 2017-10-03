@@ -115,6 +115,11 @@ export class ProjectManager {
         this.inMemoryFs.didClose(uri);
         let version = this.versions.get(uri) || 0;
         this.versions.set(uri, ++version);
+        const config = this.config;
+        if (!config) {
+            return;
+        }
+        config.ensureConfigFile();
     }
 
     /**
@@ -126,6 +131,11 @@ export class ProjectManager {
         this.inMemoryFs.didChange(uri, text);
         let version = this.versions.get(uri) || 0;
         this.versions.set(uri, ++version);
+        const config = this.config;
+        if (!config) {
+            return;
+        }
+        config.ensureConfigFile();
     }
 
     /**
@@ -462,6 +472,12 @@ export class ProjectConfiguration {
         this.fs = fs;
         this.versions = versions;
         this.rootFilePath = rootFilePath;
+    }
+
+    private init(): void {
+        if (this.initialized) {
+            return;
+        }
         this.host = new InMemoryLanguageServiceHost(
             this.fs.path,
             this.fs,
@@ -503,5 +519,12 @@ export class ProjectConfiguration {
             throw new Error("project is uninitialized");
         }
         return this.host;
+    }
+
+    /**
+     * Ensures we are ready to process files from a given sub-project
+    */
+    public ensureConfigFile(): void {
+        this.init();
     }
 }
