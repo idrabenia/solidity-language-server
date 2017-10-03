@@ -58,6 +58,11 @@ export class ProjectManager {
     private ensuredModuleStructure?: Observable<never>;
 
     /**
+     * Observable that completes when `ensureAllFiles` completed
+     */
+    private ensuredAllFiles?: Observable<never>;
+
+    /**
      * Observable that completes when `ensureOwnFiles` completed
      */
     private ensuredOwnFiles?: Observable<never>;
@@ -157,6 +162,25 @@ export class ProjectManager {
                 .refCount() as Observable<never>;
         }
         return this.ensuredModuleStructure;
+    }
+
+    /**
+     * Ensures all files were fetched from the remote file system.
+     * Invalidates project configurations after execution
+     */
+    public ensureAllFiles(): Observable<never> {
+        if (!this.ensuredAllFiles) {
+            this.ensuredAllFiles = this.updater.ensureStructure()
+                .concat(Observable.defer(() => observableFromIterable(this.inMemoryFs.uris())))
+                .filter(uri => isSolidityFile(uri) || isPackageJsonFile(uri))
+                .mergeMap(uri => this.updater.ensure(uri))
+                .do(_.noop, (_err: any) => {
+                    this.ensuredAllFiles = undefined;
+                })
+                .publishReplay()
+                .refCount() as Observable<never>;
+        }
+        return this.ensuredAllFiles;
     }
 
     /**
