@@ -302,7 +302,7 @@ export class ProjectManager {
 
 /**
  * Implementaton of LanguageServiceHost that works with in-memory file system.
- * It takes file content from local cache and provides it to TS compiler on demand
+ * It takes file content from local cache and provides it to Solidity compiler on demand
  *
  * @implements LanguageServiceHost
  */
