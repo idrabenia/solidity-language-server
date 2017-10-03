@@ -2,10 +2,8 @@
 {
     "files.exclude": {
         "node_modules": true,
-        "build": true
-    },
-    "search.exclude": {
-        "build": true
+        "out": true,
+        ".vscode-test": true
     },
     "tsimporter.doubleQuotes": true
 }
