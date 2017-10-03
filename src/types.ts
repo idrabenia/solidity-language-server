@@ -1,3 +1,7 @@
+export interface CompilerOptions {
+    optimize: boolean;
+}
+
 export interface ModuleResolutionHost {
     fileExists(fileName: string): boolean;
     readFile(fileName: string): string;
