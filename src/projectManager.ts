@@ -120,6 +120,7 @@ export class ProjectManager {
             return;
         }
         config.ensureConfigFile();
+        config.getHost().incProjectVersion();
     }
 
     /**
@@ -136,6 +137,7 @@ export class ProjectManager {
             return;
         }
         config.ensureConfigFile();
+        config.getHost().incProjectVersion();
     }
 
     /**
