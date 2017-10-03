@@ -1,5 +1,7 @@
 import * as url from "url";
 
+import { Observable } from "@reactivex/rxjs";
+
 import { CharacterCodes } from "./types";
 
 const enum Comparison {
@@ -538,4 +540,12 @@ const packageJsonPattern = /(^|\/)package\.json$/;
 
 export function isPackageJsonFile(filename: string): boolean {
     return packageJsonPattern.test(filename);
+}
+
+/**
+ * Converts an Iterable to an Observable.
+ * Workaround for https://github.com/ReactiveX/rxjs/issues/2306
+ */
+export function observableFromIterable<T>(iterable: Iterable<T>): Observable<T> {
+    return Observable.from(iterable as any);
 }

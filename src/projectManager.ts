@@ -1,7 +1,7 @@
 import { Observable } from "@reactivex/rxjs";
 import * as _ from "lodash";
 
-import { path2uri, toUnixPath, uri2path } from "./core";
+import { isPackageJsonFile, isSolidityFile, observableFromIterable, path2uri, toUnixPath, uri2path } from "./core";
 import { FileSystemUpdater } from "./fs";
 import { Logger, NoopLogger } from "./logging";
 import { InMemoryFileSystem } from "./memfs";
@@ -50,6 +50,11 @@ export class ProjectManager {
     getConfiguration(): ProjectConfiguration {
         return this.config;
     }
+
+    /**
+     * Observable that completes when `ensureOwnFiles` completed
+     */
+    private ensuredOwnFiles?: Observable<never>;
 
     /**
      * A URI Map from file to files referenced by the file, so files only need to be pre-processed once
@@ -118,6 +123,26 @@ export class ProjectManager {
      */
     public didSave(uri: string) {
         this.inMemoryFs.didSave(uri);
+    }
+
+    /**
+     * Ensures all files not in node_modules were fetched.
+     * This includes all js/ts files, tsconfig files and package.json files.
+     * Invalidates project configurations after execution
+     */
+    public ensureOwnFiles(): Observable<never> {
+        if (!this.ensuredOwnFiles) {
+            this.ensuredOwnFiles = this.updater.ensureStructure()
+                .concat(Observable.defer(() => observableFromIterable(this.inMemoryFs.uris())))
+                .filter((uri: string) => !uri.includes("/node_modules/") && isSolidityFile(uri) || isPackageJsonFile(uri))
+                .mergeMap((uri: string) => this.updater.ensure(uri))
+                .do(_.noop, (_err: any) => {
+                    this.ensuredOwnFiles = undefined;
+                })
+                .publishReplay()
+                .refCount() as Observable<never>;
+        }
+        return this.ensuredOwnFiles;
     }
 
     /**
