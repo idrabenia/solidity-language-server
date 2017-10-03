@@ -1,4 +1,5 @@
 import { Observable } from "@reactivex/rxjs";
+import iterate from "iterare";
 import * as _ from "lodash";
 
 import { isPackageJsonFile, isSolidityFile, observableFromIterable, path2uri, toUnixPath, uri2path } from "./core";
@@ -23,6 +24,13 @@ export class ProjectManager {
     private versions: Map<string, number>;
 
     /**
+     * (Workspace subtree (folder) -> Solidity configuration) mapping.
+     * Configuration settings for a source file A are located in the closest parent folder of A.
+     * Map keys are relative (to workspace root) paths
+     */
+    private configs = new Map<string, ProjectConfiguration>();
+
+    /**
      * Local side of file content provider which keeps cache of fetched files
      */
     private inMemoryFs: InMemoryFileSystem;
@@ -31,6 +39,7 @@ export class ProjectManager {
      * File system updater that takes care of updating the in-memory file system
      */
     private updater: FileSystemUpdater;
+
 
     /**
      * @return local side of file content provider which keeps cached copies of fethed files
@@ -45,10 +54,6 @@ export class ProjectManager {
      */
     hasFile(filePath: string) {
         return this.inMemoryFs.fileExists(filePath);
-    }
-
-    getConfiguration(): ProjectConfiguration {
-        return this.config;
     }
 
     /**
@@ -72,8 +77,6 @@ export class ProjectManager {
      */
     private referencedFiles = new Map<string, Observable<string>>();
 
-    private config: ProjectConfiguration;
-
     /**
      * @param rootPath root path as passed to `initialize`
      * @param inMemoryFileSystem File system that keeps structure and contents in memory
@@ -90,11 +93,77 @@ export class ProjectManager {
         this.versions = new Map<string, number>();
 
         const trimmedRootPath = this.rootPath.replace(/\/+$/, "");
-        this.config = new ProjectConfiguration(
+        const config = new ProjectConfiguration(
             this.inMemoryFs,
             trimmedRootPath,
             this.versions,
             this.logger);
+        this.configs.set(trimmedRootPath, config);
+    }
+
+    /**
+     * @return all sub-projects we have identified for a given workspace.
+     * Sub-project is mainly a folder which contains tsconfig.json, jsconfig.json, package.json,
+     * or a root folder which serves as a fallback
+     */
+    public configurations(): IterableIterator<ProjectConfiguration> {
+        return iterate(this.configs.values());
+    }
+
+    /**
+     * @param filePath source file path, absolute
+     * @return project configuration for a given source file. Climbs directory tree up to workspace root if needed
+     */
+    public getConfiguration(filePath: string): ProjectConfiguration {
+        const config = this.getConfigurationIfExists(filePath);
+        if (!config) {
+            throw new Error(`Solidity config file for ${filePath} not found`);
+        }
+        return config;
+    }
+
+    /**
+     * @param filePath source file path, absolute
+     * @return closest configuration for a given file path or undefined if there is no such configuration
+     */
+    public getConfigurationIfExists(filePath: string): ProjectConfiguration | undefined {
+        let dir = toUnixPath(filePath);
+        let config: ProjectConfiguration | undefined;
+        const configs = this.configs;
+        const rootPath = this.rootPath.replace(/\/+$/, "");
+        while (dir && dir !== rootPath) {
+            config = configs.get(dir);
+            if (config) {
+                return config;
+            }
+            const pos = dir.lastIndexOf("/");
+            if (pos <= 0) {
+                dir = "";
+            } else {
+                dir = dir.substring(0, pos);
+            }
+        }
+        return configs.get(rootPath);
+    }
+
+
+    /**
+     * Returns the ProjectConfiguration a file belongs to
+     */
+    public getParentConfiguration(uri: string): ProjectConfiguration | undefined {
+        return this.getConfigurationIfExists(uri2path(uri));
+    }
+
+    /**
+     * Returns all ProjectConfigurations contained in the given directory or one of its childrens
+     *
+     * @param uri URI of a directory
+     */
+    public getChildConfigurations(uri: string): IterableIterator<ProjectConfiguration> {
+        const pathPrefix = uri2path(uri);
+        return iterate(this.configs)
+            .filter(([folderPath, _]: any) => folderPath.startsWith(pathPrefix))
+            .map(([_, config]: any) => config);
     }
 
     /**
@@ -112,10 +181,11 @@ export class ProjectManager {
      * @param uri file's URI
      */
     public didClose(uri: string) {
+        const filePath = uri2path(uri);
         this.inMemoryFs.didClose(uri);
         let version = this.versions.get(uri) || 0;
         this.versions.set(uri, ++version);
-        const config = this.config;
+        const config = this.getConfigurationIfExists(filePath);
         if (!config) {
             return;
         }
@@ -129,10 +199,11 @@ export class ProjectManager {
      * @param text file's content
      */
     public didChange(uri: string, text: string) {
+        const filePath = uri2path(uri);
         this.inMemoryFs.didChange(uri, text);
         let version = this.versions.get(uri) || 0;
         this.versions.set(uri, ++version);
-        const config = this.config;
+        const config = this.getConfigurationIfExists(filePath);
         if (!config) {
             return;
         }
@@ -166,7 +237,9 @@ export class ProjectManager {
                 }, () => {
                     // Reset all compilation state
                     // TODO ze incremental compilation instead
-                    this.config.reset();
+                    for (const config of this.configurations()) {
+                        config.reset();
+                    }
                     // Require re-processing of file references
                     this.invalidateReferencedFiles();
                 })

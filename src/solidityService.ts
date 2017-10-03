@@ -258,7 +258,9 @@ export class SolidityService {
             .toArray()
             .mergeMap(() => {
                 const fileName: string = uri2path(uri);
-                const configuration = this.projectManager.getConfiguration();
+
+                const configuration = this.projectManager.getConfiguration(fileName);
+
                 const completions = configuration.getService().getCompletionsAtPosition(fileName, params.position);
 
                 return Observable.from(completions)
