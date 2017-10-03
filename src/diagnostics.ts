@@ -3,19 +3,19 @@ import {
     DiagnosticSeverity
 } from "vscode-languageserver";
 
-import { LanguageServiceHost } from "./services/types";
+import { ModuleResolutionHost } from "./types";
 
 const solc = require("solc");
 const Solium = require("solium");
 
-export function getDiagnostics(host: LanguageServiceHost, fileName: string): Diagnostic[] {
+export function getDiagnostics(host: ModuleResolutionHost, fileName: string): Diagnostic[] {
     const compilerDiagnostics = getCompilerDiagnostics(host, fileName);
     const linterDiagnostics = getLinterDiagnostics(host, fileName);
 
     return compilerDiagnostics.concat(linterDiagnostics);
 }
 
-function getCompilerDiagnostics(host: LanguageServiceHost, fileName: string): Diagnostic[] {
+function getCompilerDiagnostics(host: ModuleResolutionHost, fileName: string): Diagnostic[] {
     if (host.readFile) {
         const text = host.readFile(fileName);
         const input = { [fileName]: text };
@@ -84,7 +84,7 @@ export const soliumDefaultRules = {
     "whitespace": true
 };
 
-function getLinterDiagnostics(host: LanguageServiceHost, fileName: string, rules = soliumDefaultRules): Diagnostic[] {
+function getLinterDiagnostics(host: ModuleResolutionHost, fileName: string, rules = soliumDefaultRules): Diagnostic[] {
     if (!host.readFile) {
         return [];
     }
