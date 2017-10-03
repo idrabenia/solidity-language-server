@@ -277,6 +277,10 @@ export class InMemoryLanguageServiceHost implements LanguageServiceHost {
         return this.fs.readFile(filePath);
     }
 
+    fileExists(path: string): boolean {
+        return this.fs.fileExists(path);
+    }
+
     /**
      * @param fileName absolute file path
      */
