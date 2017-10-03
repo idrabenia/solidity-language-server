@@ -52,6 +52,12 @@ export class ProjectManager {
     }
 
     /**
+     * Flag indicating that we fetched module struture (package.json files) from the remote file system.
+     * Without having this information we won't be able to split workspace to sub-projects
+     */
+    private ensuredModuleStructure?: Observable<never>;
+
+    /**
      * Observable that completes when `ensureOwnFiles` completed
      */
     private ensuredOwnFiles?: Observable<never>;
@@ -126,6 +132,34 @@ export class ProjectManager {
     }
 
     /**
+     * Ensures that the module structure of the project exists in memory.
+     * Solidity module structure is determined by package.json.
+     * Then creates new ProjectConfigurations, resets existing and invalidates
+     * file references.
+     */
+    public ensureModuleStructure(): Observable<never> {
+        if (!this.ensuredModuleStructure) {
+            this.ensuredModuleStructure = this.updater.ensureStructure()
+                // Ensure content of all all global .d.ts, [tj]sconfig.json, package.json files
+                .concat(Observable.defer(() => observableFromIterable(this.inMemoryFs.uris())))
+                .filter(uri => isPackageJsonFile(uri))
+                .mergeMap(uri => this.updater.ensure(uri))
+                .do(_.noop, (_err: any) => {
+                    this.ensuredModuleStructure = undefined;
+                }, () => {
+                    // Reset all compilation state
+                    // TODO ze incremental compilation instead
+                    this.config.reset();
+                    // Require re-processing of file references
+                    this.invalidateReferencedFiles();
+                })
+                .publishReplay()
+                .refCount() as Observable<never>;
+        }
+        return this.ensuredModuleStructure;
+    }
+
+    /**
      * Ensures all files not in node_modules were fetched.
      * This includes all js/ts files, tsconfig files and package.json files.
      * Invalidates project configurations after execution
@@ -164,8 +198,9 @@ export class ProjectManager {
      */
     public ensureReferencedFiles(uri: string, maxDepth = 30, ignore = new Set<string>()): Observable<string> {
         ignore.add(uri);
-        // If max depth was reached, don't go any further
-        return Observable.defer(() => maxDepth === 0 ? Observable.empty<never>() : this.resolveReferencedFiles(uri))
+        return this.ensureModuleStructure()
+            // If max depth was reached, don't go any further
+            .concat(Observable.defer(() => maxDepth === 0 ? Observable.empty<never>() : this.resolveReferencedFiles(uri)))
             // Prevent cycles
             .filter(referencedUri => !ignore.has(referencedUri))
             // Call method recursively with one less dep level
@@ -213,6 +248,19 @@ export class ProjectManager {
             .refCount();
         this.referencedFiles.set(uri, observable);
         return observable;
+    }
+
+    /**
+     * Invalidates a cache entry for `resolveReferencedFiles` (e.g. because the file changed)
+     *
+     * @param uri The URI that referenced files should be invalidated for. If not given, all entries are invalidated
+     */
+    public invalidateReferencedFiles(uri?: string): void {
+        if (uri) {
+            this.referencedFiles.delete(uri);
+        } else {
+            this.referencedFiles.clear();
+        }
     }
 }
 
