@@ -2,7 +2,7 @@ import * as url from "url";
 
 import { Observable } from "@reactivex/rxjs";
 
-import { CharacterCodes } from "./types";
+import { CharacterCodes, Path } from "./types";
 
 const enum Comparison {
     LessThan = -1,
@@ -13,6 +13,23 @@ const enum Comparison {
 const singleAsteriskRegexFragmentFiles = "([^./]|(\\.(?!min\\.js$))?)*";
 const singleAsteriskRegexFragmentOther = "[^/]*";
 const reservedCharacterPattern = /[^\w\s\/]/g;
+
+export function toPath(fileName: string, basePath: string, getCanonicalFileName: (path: string) => string): Path {
+    const nonCanonicalizedPath = isRootedDiskPath(fileName)
+        ? normalizePath(fileName)
+        : getNormalizedAbsolutePath(fileName, basePath);
+    return <Path>getCanonicalFileName(nonCanonicalizedPath);
+}
+
+export function getNormalizedAbsolutePath(fileName: string, currentDirectory: string) {
+    return getNormalizedPathFromPathComponents(getNormalizedPathComponents(fileName, currentDirectory));
+}
+
+export function getNormalizedPathFromPathComponents(pathComponents: ReadonlyArray<string>) {
+    if (pathComponents && pathComponents.length) {
+        return pathComponents[0] + pathComponents.slice(1).join(directorySeparator);
+    }
+}
 
 /**
  * Converts a uri to an absolute path.
@@ -77,6 +94,8 @@ export function normalizeUri(uri: string): string {
     return url.format(parts);
 }
 
+export function getDirectoryPath(path: Path): Path;
+export function getDirectoryPath(path: string): string;
 export function getDirectoryPath(path: string): string {
     return path.substr(0, Math.max(getRootLength(path), path.lastIndexOf(directorySeparator)));
 }
@@ -302,7 +321,13 @@ function indexOfAnyCharCode(text: string, charCodes: number[], start?: number): 
 
 const wildcardCharCodes = [CharacterCodes.asterisk, CharacterCodes.question];
 
-function removeTrailingDirectorySeparator(path: string) {
+/**
+ * Removes a trailing directory separator from a path.
+ * @param path The path.
+ */
+export function removeTrailingDirectorySeparator(path: Path): Path;
+export function removeTrailingDirectorySeparator(path: string): string;
+export function removeTrailingDirectorySeparator(path: string) {
     if (path.charAt(path.length - 1) === directorySeparator) {
         return path.substr(0, path.length - 1);
     }
