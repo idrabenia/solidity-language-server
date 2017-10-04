@@ -1,4 +1,4 @@
-import { combinePaths, getDirectoryPath, isExternalModuleNameRelative, isRootedDiskPath, normalizePath } from "./core";
+import { combinePaths, getDirectoryPath, isExternalModuleNameRelative, normalizePath } from "./core";
 import { CompilerOptions, ModuleResolutionHost, ResolvedModule, ResolvedModuleWithFailedLookupLocations } from "./types";
 
 /** Array that is only intended to be pushed to, never read. */
@@ -32,10 +32,6 @@ function toSearchResult<T>(value: T | undefined): SearchResult<T> {
     return value !== undefined ? { value } : undefined;
 }
 
-export function moduleHasNonRelativeName(moduleName: string): boolean {
-    return !(isRootedDiskPath(moduleName) || isExternalModuleNameRelative(moduleName));
-}
-
 function resolvedModuleFromResolved({ path }: Resolved): ResolvedModule {
     return { resolvedFileName: path };
 }
@@ -52,7 +48,7 @@ export function resolveModuleName(moduleName: string, containingFile: string, _c
     return createResolvedModuleWithFailedLookupLocations(resolved && resolved.value, failedLookupLocations);
 
     function tryResolve(): SearchResult<Resolved> {
-        if (moduleHasNonRelativeName(moduleName)) {
+        if (!isExternalModuleNameRelative(moduleName)) {
             // FIXME: Implement.
         } else {
             const candidate = normalizePath(combinePaths(containingDirectory, moduleName));
