@@ -618,3 +618,15 @@ export function forEach<T, U>(array: ReadonlyArray<T> | undefined, callback: (el
     }
     return undefined;
 }
+
+export function getBaseFileName(path: string) {
+    if (path === undefined) {
+        return undefined;
+    }
+    const i = path.lastIndexOf(directorySeparator);
+    return i < 0 ? path : path.substring(i + 1);
+}
+
+export function hasExtension(fileName: string): boolean {
+    return getBaseFileName(fileName).indexOf(".") >= 0;
+}
