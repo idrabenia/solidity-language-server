@@ -11,6 +11,7 @@ import { resolveModuleName } from "./moduleNameResolver";
 import { preProcessFile } from "./services/preProcessFile";
 import { createLanguageService } from "./services/services";
 import { LanguageService, LanguageServiceHost } from "./services/types";
+import { CompilerOptions } from "./types";
 
 export class ProjectManager {
     /**
@@ -95,6 +96,9 @@ export class ProjectManager {
 
         const trimmedRootPath = this.rootPath.replace(/\/+$/, "");
         const solidityConfig: any = {
+            compilerOptions: {
+                optimize: true
+            },
             include: "**/*.sol"
         };
         const config = new ProjectConfiguration(
@@ -344,11 +348,13 @@ export class ProjectManager {
         observable = this.updater.ensure(uri)
             .concat(Observable.defer(() => {
                 const referencingFilePath = uri2path(uri);
+                const config = this.getConfiguration(referencingFilePath);
                 const contents = this.inMemoryFs.getContent(uri);
                 const info = preProcessFile(contents);
+                const compilerOpt = config.getHost().getCompilationSettings();
                 // Iterate imported files
                 return Observable.from(info.importedFiles)
-                    .map(importedFile => resolveModuleName(importedFile.fileName, toUnixPath(referencingFilePath), this.inMemoryFs))
+                    .map(importedFile => resolveModuleName(importedFile.fileName, toUnixPath(referencingFilePath), compilerOpt, this.inMemoryFs))
                     .filter(resolved => !!(resolved && resolved.resolvedModule))
                     .map(resolved => resolved.resolvedModule!.resolvedFileName);
             }))
@@ -395,6 +401,12 @@ export class InMemoryLanguageServiceHost implements LanguageServiceHost {
     private rootPath: string;
 
     /**
+     * Compiler options to use when parsing/analyzing source files.
+     * We are extracting them from tsconfig.json or jsconfig.json
+     */
+    private options: CompilerOptions;
+
+    /**
      * Local file cache where we looking for file content
      */
     private fs: InMemoryFileSystem;
@@ -417,8 +429,9 @@ export class InMemoryLanguageServiceHost implements LanguageServiceHost {
      */
     private versions: Map<string, number>;
 
-    constructor(rootPath: string, fs: InMemoryFileSystem, versions: Map<string, number>, private logger: Logger = new NoopLogger()) {
+    constructor(rootPath: string, options: CompilerOptions, fs: InMemoryFileSystem, versions: Map<string, number>, private logger: Logger = new NoopLogger()) {
         this.rootPath = rootPath;
+        this.options = options;
         this.fs = fs;
         this.versions = versions;
         this.projectVersion = 1;
@@ -444,6 +457,10 @@ export class InMemoryLanguageServiceHost implements LanguageServiceHost {
      */
     public incProjectVersion() {
         this.projectVersion++;
+    }
+
+    public getCompilationSettings(): CompilerOptions {
+        return this.options;
     }
 
     public getScriptFileNames(): string[] {
@@ -578,6 +595,7 @@ export class ProjectConfiguration {
 
         this.host = new InMemoryLanguageServiceHost(
             this.fs.path,
+            configObject.compilerOptions,
             this.fs,
             this.versions,
             this.logger

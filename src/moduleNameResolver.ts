@@ -1,5 +1,5 @@
 import { combinePaths, getDirectoryPath, isExternalModuleNameRelative, isRootedDiskPath, normalizePath } from "./core";
-import { ModuleResolutionHost, ResolvedModule, ResolvedModuleWithFailedLookupLocations } from "./types";
+import { CompilerOptions, ModuleResolutionHost, ResolvedModule, ResolvedModuleWithFailedLookupLocations } from "./types";
 
 /** Array that is only intended to be pushed to, never read. */
 export interface Push<T> {
@@ -44,7 +44,7 @@ function createResolvedModuleWithFailedLookupLocations(resolved: Resolved | unde
     return { resolvedModule: resolved && resolvedModuleFromResolved(resolved), failedLookupLocations };
 }
 
-export function resolveModuleName(moduleName: string, containingFile: string, host: ModuleResolutionHost): ResolvedModuleWithFailedLookupLocations {
+export function resolveModuleName(moduleName: string, containingFile: string, _compilerOptions: CompilerOptions, host: ModuleResolutionHost): ResolvedModuleWithFailedLookupLocations {
     const failedLookupLocations: string[] = [];
     const containingDirectory = getDirectoryPath(containingFile);
 

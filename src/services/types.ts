@@ -4,6 +4,8 @@ import {
     Position
 } from "vscode-languageserver";
 
+import { CompilerOptions } from "../types";
+
 //
 // Public services of a language service instance associated
 // with a language service host instance
@@ -17,6 +19,7 @@ export interface LanguageService {
 // Public interface of the host of a language service instance.
 //
 export interface LanguageServiceHost {
+    getCompilationSettings(): CompilerOptions;
     getNewLine?(): string;
     getProjectVersion?(): string;
     getScriptFileNames(): string[];
