@@ -227,9 +227,15 @@ export function combinePaths(path1: string, path2: string) {
     return path1 + directorySeparator + path2;
 }
 
+export function pathIsRelative(path: string): boolean {
+    return /^\.\.?($|[\\/])/.test(path);
+}
+
 export function isExternalModuleNameRelative(moduleName: string): boolean {
+    // TypeScript 1.0 spec (April 2014): 11.2.1
     // An external module name is "relative" if the first term is "." or "..".
-    return /^\.\.?($|[\\/])/.test(moduleName);
+    // Update: We also consider a path like `C:\foo.ts` "relative" because we do not search for it in `node_modules` or treat it as an ambient module.
+    return pathIsRelative(moduleName) || isRootedDiskPath(moduleName);
 }
 
 export function isRootedDiskPath(path: string) {
