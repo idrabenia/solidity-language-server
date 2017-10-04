@@ -2,7 +2,7 @@ import * as url from "url";
 
 import { Observable } from "@reactivex/rxjs";
 
-import { CharacterCodes, Path } from "./types";
+import { CharacterCodes, Map, Path } from "./types";
 
 const enum Comparison {
     LessThan = -1,
@@ -591,4 +591,12 @@ export function isPackageJsonFile(filename: string): boolean {
  */
 export function observableFromIterable<T>(iterable: Iterable<T>): Observable<T> {
     return Observable.from(iterable as any);
+}
+
+// The global Map object. This may not be available, so we must test for it.
+declare const Map: { new <T>(): Map<T> } | undefined;
+
+/** Create a new map. If a template object is provided, the map will copy entries from it. */
+export function createMap<T>(): Map<T> {
+    return new Map<T>();
 }

@@ -2,6 +2,24 @@
 // arbitrary file name can be converted to Path via toPath function
 export type Path = string & { __pathBrand: any };
 
+/** ES6 Map interface, only read methods included. */
+export interface ReadonlyMap<T> {
+    get(key: string): T | undefined;
+    has(key: string): boolean;
+    forEach(action: (value: T, key: string) => void): void;
+    readonly size: number;
+    keys(): Iterator<string>;
+    values(): Iterator<T>;
+    entries(): Iterator<[string, T]>;
+}
+
+/** ES6 Map interface. */
+export interface Map<T> extends ReadonlyMap<T> {
+    set(key: string, value: T): this;
+    delete(key: string): boolean;
+    clear(): void;
+}
+
 export interface CompilerOptions {
     optimize: boolean;
 }
