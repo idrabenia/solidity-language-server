@@ -678,3 +678,5 @@ export const supportedSolidityExtensions: ReadonlyArray<Extension> = [Extension.
 export function hasSolidityFileExtension(fileName: string) {
     return forEach(supportedSolidityExtensions, extension => fileExtensionIs(fileName, extension));
 }
+
+export function noop(): void { }

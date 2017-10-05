@@ -1,9 +1,8 @@
 import { Observable } from "@reactivex/rxjs";
 import * as glob from "glob";
 import iterate from "iterare";
-import * as _ from "lodash";
 
-import { isPackageJsonFile, isSolidityFile, observableFromIterable, path2uri, toUnixPath, uri2path } from "../compiler/core";
+import { isPackageJsonFile, isSolidityFile, noop, observableFromIterable, path2uri, toUnixPath, uri2path } from "../compiler/core";
 import { resolveModuleName } from "../compiler/moduleNameResolver";
 import { CompilerOptions } from "../compiler/types";
 import { preProcessFile } from "../services/preProcessFile";
@@ -242,7 +241,7 @@ export class ProjectManager {
                 .concat(Observable.defer(() => observableFromIterable(this.inMemoryFs.uris())))
                 .filter(uri => isPackageJsonFile(uri))
                 .mergeMap(uri => this.updater.ensure(uri))
-                .do(_.noop, (_err: any) => {
+                .do(noop, (_err: any) => {
                     this.ensuredModuleStructure = undefined;
                 }, () => {
                     // Reset all compilation state
@@ -269,7 +268,7 @@ export class ProjectManager {
                 .concat(Observable.defer(() => observableFromIterable(this.inMemoryFs.uris())))
                 .filter(uri => isSolidityFile(uri) || isPackageJsonFile(uri))
                 .mergeMap(uri => this.updater.ensure(uri))
-                .do(_.noop, (_err: any) => {
+                .do(noop, (_err: any) => {
                     this.ensuredAllFiles = undefined;
                 })
                 .publishReplay()
@@ -289,7 +288,7 @@ export class ProjectManager {
                 .concat(Observable.defer(() => observableFromIterable(this.inMemoryFs.uris())))
                 .filter((uri: string) => !uri.includes("/node_modules/") && isSolidityFile(uri) || isPackageJsonFile(uri))
                 .mergeMap((uri: string) => this.updater.ensure(uri))
-                .do(_.noop, (_err: any) => {
+                .do(noop, (_err: any) => {
                     this.ensuredOwnFiles = undefined;
                 })
                 .publishReplay()
@@ -362,7 +361,7 @@ export class ProjectManager {
             // Use same scheme, slashes, host for referenced URI as input file
             .map(filePath => path2uri(filePath))
             // Don't cache errors
-            .do(_.noop, (_err: any) => {
+            .do(noop, (_err: any) => {
                 this.referencedFiles.delete(uri);
             })
             // Make sure all subscribers get the same values
