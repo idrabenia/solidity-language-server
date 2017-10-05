@@ -7,7 +7,7 @@ import {
     isExternalModuleNameRelative,
     toPath
 } from "./core";
-import { normalizePathAndParts, pathEndsWithDirectorySeparator } from "./core";
+import { getBaseFileName, normalizePath, normalizePathAndParts, normalizeSlashes, pathEndsWithDirectorySeparator } from "./core";
 import { PackageId } from "./types";
 import {
     CompilerOptions,
@@ -17,12 +17,21 @@ import {
     Path,
     ResolvedModuleWithFailedLookupLocations
 } from "./types";
+import { forEachAncestorDirectory } from "./utilities";
 
 /** Result of trying to resolve a module at a file. Needs to have 'packageId' added later. */
 interface PathAndExtension {
     path: string;
     // (Use a different name than `extension` to make sure Resolved isn't assignable to PathAndExtension.)
     ext: Extension;
+}
+
+interface PackageJson {
+    name?: string;
+    version?: string;
+    typings?: string;
+    types?: string;
+    main?: string;
 }
 
 /** Array that is only intended to be pushed to, never read. */
@@ -216,7 +225,16 @@ export function solidityNameResolver(moduleName: string, containingFile: string,
     return solidityModuleNameResolverWorker(moduleName, getDirectoryPath(containingFile), compilerOptions, host, cache);
 }
 
-function solidityModuleNameResolverWorker(moduleName: string, containingDirectory: string, compilerOptions: CompilerOptions, host: ModuleResolutionHost, _cache: ModuleResolutionCache | undefined): ResolvedModuleWithFailedLookupLocations {
+function realPath(path: string, host: ModuleResolutionHost): string {
+    if (!host.realpath) {
+        return path;
+    }
+
+    const real = normalizePath(host.realpath(path));
+    return real;
+}
+
+function solidityModuleNameResolverWorker(moduleName: string, containingDirectory: string, compilerOptions: CompilerOptions, host: ModuleResolutionHost, cache: ModuleResolutionCache | undefined): ResolvedModuleWithFailedLookupLocations {
     const failedLookupLocations: string[] = [];
     const state: ModuleResolutionState = { compilerOptions, host };
 
@@ -229,13 +247,109 @@ function solidityModuleNameResolverWorker(moduleName: string, containingDirector
 
     function tryResolve(): SearchResult<{ resolved: Resolved, isExternalLibraryImport: boolean }> {
         if (!isExternalModuleNameRelative(moduleName)) {
-            // FIXME: Implement.
+            const resolved = loadModuleFromNodeModules(moduleName, containingDirectory, failedLookupLocations, state, cache);
+            if (!resolved) return undefined;
+
+            let resolvedValue = resolved.value;
+            resolvedValue = resolvedValue && { ...resolved.value, path: realPath(resolved.value.path, host), extension: resolved.value.extension };
+            // For node_modules lookups, get the real path so that multiple accesses to an `npm link`-ed module do not create duplicate files.
+            return { value: resolvedValue && { resolved: resolvedValue, isExternalLibraryImport: true } };
         } else {
             const { path: candidate, parts } = normalizePathAndParts(combinePaths(containingDirectory, moduleName));
             const resolved = solidityLoadModuleByRelativeName(candidate, failedLookupLocations, /*onlyRecordFailures*/ false, state);
             // Treat explicit "node_modules" import as an external library import.
             return resolved && toSearchResult({ resolved, isExternalLibraryImport: contains(parts, "node_modules") });
         }
+    }
+}
+
+function loadModuleFromNodeModules(moduleName: string, directory: string, failedLookupLocations: Push<string>, state: ModuleResolutionState, cache: NonRelativeModuleNameResolutionCache): SearchResult<Resolved> {
+    return loadModuleFromNodeModulesWorker(moduleName, directory, failedLookupLocations, state, cache);
+}
+
+function loadModuleFromNodeModulesWorker(moduleName: string, directory: string, failedLookupLocations: Push<string>, state: ModuleResolutionState, cache: NonRelativeModuleNameResolutionCache): SearchResult<Resolved> {
+    const perModuleNameCache = cache && cache.getOrCreateCacheForModuleName(moduleName);
+    return forEachAncestorDirectory(normalizeSlashes(directory), ancestorDirectory => {
+        if (getBaseFileName(ancestorDirectory) !== "node_modules") {
+            const resolutionFromCache = tryFindNonRelativeModuleNameInCache(perModuleNameCache, moduleName, ancestorDirectory, state.host);
+            if (resolutionFromCache) {
+                return resolutionFromCache;
+            }
+            return toSearchResult(loadModuleFromNodeModulesOneLevel(moduleName, ancestorDirectory, failedLookupLocations, state));
+        }
+    });
+}
+
+function tryFindNonRelativeModuleNameInCache(cache: PerModuleNameCache | undefined, _moduleName: string, containingDirectory: string, _host: ModuleResolutionHost): SearchResult<Resolved> {
+    const result = cache && cache.get(containingDirectory);
+    if (result) {
+        return { value: result.resolvedModule && { path: result.resolvedModule.resolvedFileName, extension: result.resolvedModule.extension, packageId: result.resolvedModule.packageId } };
+    }
+}
+
+/** Load a module from a single node_modules directory, but not from any ancestors' node_modules directories. */
+function loadModuleFromNodeModulesOneLevel(moduleName: string, directory: string, failedLookupLocations: Push<string>, state: ModuleResolutionState): Resolved | undefined {
+    const nodeModulesFolder = combinePaths(directory, "node_modules");
+    const nodeModulesFolderExists = directoryProbablyExists(nodeModulesFolder, state.host);
+
+    const packageResult = loadModuleFromNodeModulesFolder(moduleName, nodeModulesFolder, nodeModulesFolderExists, failedLookupLocations, state);
+    if (packageResult) {
+        return packageResult;
+    }
+}
+
+function loadModuleFromNodeModulesFolder(moduleName: string, nodeModulesFolder: string, nodeModulesFolderExists: boolean, failedLookupLocations: Push<string>, state: ModuleResolutionState): Resolved | undefined {
+    const { packageName, rest } = getPackageName(moduleName);
+    const packageRootPath = combinePaths(nodeModulesFolder, packageName);
+    const { packageId } = getPackageJsonInfo(packageRootPath, rest, failedLookupLocations, !nodeModulesFolderExists, state);
+    const candidate = normalizePath(combinePaths(nodeModulesFolder, moduleName));
+    const pathAndExtension = loadModuleFromFile(candidate, failedLookupLocations, !nodeModulesFolderExists, state);
+    return withPackageId(packageId, pathAndExtension);
+}
+
+function getPackageName(moduleName: string): { packageName: string, rest: string } {
+    let idx = moduleName.indexOf(directorySeparator);
+    if (moduleName[0] === "@") {
+        idx = moduleName.indexOf(directorySeparator, idx + 1);
+    }
+    return idx === -1 ? { packageName: moduleName, rest: "" } : { packageName: moduleName.slice(0, idx), rest: moduleName.slice(idx + 1) };
+}
+
+function pathToPackageJson(directory: string): string {
+    return combinePaths(directory, "package.json");
+}
+
+function getPackageJsonInfo(
+    nodeModuleDirectory: string,
+    subModuleName: string,
+    failedLookupLocations: Push<string>,
+    onlyRecordFailures: boolean,
+    { host }: ModuleResolutionState,
+): { packageJsonContent: PackageJson | undefined, packageId: PackageId | undefined } {
+    const directoryExists = !onlyRecordFailures && directoryProbablyExists(nodeModuleDirectory, host);
+    const packageJsonPath = pathToPackageJson(nodeModuleDirectory);
+    if (directoryExists && host.fileExists(packageJsonPath)) {
+        const packageJsonContent = readJson(packageJsonPath, host);
+        const packageId: PackageId = typeof packageJsonContent.name === "string" && typeof packageJsonContent.version === "string"
+            ? { name: packageJsonContent.name, subModuleName, version: packageJsonContent.version }
+            : undefined;
+        return { packageJsonContent, packageId };
+    }
+    else {
+        // record package json as one of failed lookup locations - in the future if this file will appear it will invalidate resolution results
+        failedLookupLocations.push(packageJsonPath);
+        return { packageJsonContent: undefined, packageId: undefined };
+    }
+}
+
+function readJson(path: string, host: ModuleResolutionHost): PackageJson {
+    try {
+        const jsonText = host.readFile(path);
+        return jsonText ? JSON.parse(jsonText) : {};
+    }
+    catch (e) {
+        // gracefully handle if readFile fails or returns not JSON
+        return {};
     }
 }
 
