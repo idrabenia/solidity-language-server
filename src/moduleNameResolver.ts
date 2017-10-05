@@ -1,24 +1,38 @@
 import {
     combinePaths,
+    contains,
     createMap,
     directorySeparator,
     getDirectoryPath,
     isExternalModuleNameRelative,
-    normalizePath,
     toPath
 } from "./core";
+import { normalizePathAndParts, pathEndsWithDirectorySeparator } from "./core";
+import { PackageId } from "./types";
 import {
     CompilerOptions,
+    Extension,
     Map,
     ModuleResolutionHost,
     Path,
-    ResolvedModule,
     ResolvedModuleWithFailedLookupLocations
 } from "./types";
+
+/** Result of trying to resolve a module at a file. Needs to have 'packageId' added later. */
+interface PathAndExtension {
+    path: string;
+    // (Use a different name than `extension` to make sure Resolved isn't assignable to PathAndExtension.)
+    ext: Extension;
+}
 
 /** Array that is only intended to be pushed to, never read. */
 export interface Push<T> {
     push(value: T): void;
+}
+
+interface ModuleResolutionState {
+    host: ModuleResolutionHost;
+    compilerOptions: CompilerOptions;
 }
 
 export interface PerModuleNameCache {
@@ -147,6 +161,8 @@ export function createModuleResolutionCache(currentDirectory: string, getCanonic
  */
 interface Resolved {
     path: string;
+    extension: Extension;
+    packageId: PackageId | undefined;
 }
 
 /**
@@ -168,12 +184,11 @@ function toSearchResult<T>(value: T | undefined): SearchResult<T> {
     return value !== undefined ? { value } : undefined;
 }
 
-function resolvedModuleFromResolved({ path }: Resolved): ResolvedModule {
-    return { resolvedFileName: path };
-}
-
-function createResolvedModuleWithFailedLookupLocations(resolved: Resolved | undefined, failedLookupLocations: string[]): ResolvedModuleWithFailedLookupLocations {
-    return { resolvedModule: resolved && resolvedModuleFromResolved(resolved), failedLookupLocations };
+function createResolvedModuleWithFailedLookupLocations(resolved: Resolved | undefined, isExternalLibraryImport: boolean, failedLookupLocations: string[]): ResolvedModuleWithFailedLookupLocations {
+    return {
+        resolvedModule: resolved && { resolvedFileName: resolved.path, extension: resolved.extension, isExternalLibraryImport, packageId: resolved.packageId },
+        failedLookupLocations
+    };
 }
 
 export function resolveModuleName(moduleName: string, containingFile: string, compilerOptions: CompilerOptions, host: ModuleResolutionHost, cache?: ModuleResolutionCache): ResolvedModuleWithFailedLookupLocations {
@@ -197,35 +212,77 @@ export function resolveModuleName(moduleName: string, containingFile: string, co
     return result;
 }
 
-export function solidityNameResolver(moduleName: string, containingFile: string, _compilerOptions: CompilerOptions, host: ModuleResolutionHost, _cache?: NonRelativeModuleNameResolutionCache): ResolvedModuleWithFailedLookupLocations {
+export function solidityNameResolver(moduleName: string, containingFile: string, compilerOptions: CompilerOptions, host: ModuleResolutionHost, cache?: ModuleResolutionCache): ResolvedModuleWithFailedLookupLocations {
+    return solidityModuleNameResolverWorker(moduleName, getDirectoryPath(containingFile), compilerOptions, host, cache);
+}
+
+function solidityModuleNameResolverWorker(moduleName: string, containingDirectory: string, compilerOptions: CompilerOptions, host: ModuleResolutionHost, _cache: ModuleResolutionCache | undefined): ResolvedModuleWithFailedLookupLocations {
     const failedLookupLocations: string[] = [];
-    const containingDirectory = getDirectoryPath(containingFile);
+    const state: ModuleResolutionState = { compilerOptions, host };
 
-    const resolved = tryResolve();
-    return createResolvedModuleWithFailedLookupLocations(resolved && resolved.value, failedLookupLocations);
+    const result = tryResolve();
+    if (result && result.value) {
+        const { resolved, isExternalLibraryImport } = result.value;
+        return createResolvedModuleWithFailedLookupLocations(resolved, isExternalLibraryImport, failedLookupLocations);
+    }
+    return { resolvedModule: undefined, failedLookupLocations };
 
-    function tryResolve(): SearchResult<Resolved> {
+    function tryResolve(): SearchResult<{ resolved: Resolved, isExternalLibraryImport: boolean }> {
         if (!isExternalModuleNameRelative(moduleName)) {
             // FIXME: Implement.
         } else {
-            const candidate = normalizePath(combinePaths(containingDirectory, moduleName));
-            return toSearchResult(loadModuleFromFile(candidate, failedLookupLocations, host));
+            const { path: candidate, parts } = normalizePathAndParts(combinePaths(containingDirectory, moduleName));
+            const resolved = solidityLoadModuleByRelativeName(candidate, failedLookupLocations, /*onlyRecordFailures*/ false, state);
+            // Treat explicit "node_modules" import as an external library import.
+            return resolved && toSearchResult({ resolved, isExternalLibraryImport: contains(parts, "node_modules") });
         }
     }
 }
 
-function loadModuleFromFile(candidate: string, failedLookupLocations: Push<string>, host: ModuleResolutionHost): Resolved | undefined {
-    const path = tryFile(candidate, failedLookupLocations, host);
-    if (path) {
-        return { path };
+function solidityLoadModuleByRelativeName(candidate: string, failedLookupLocations: Push<string>, onlyRecordFailures: boolean, state: ModuleResolutionState): Resolved | undefined {
+    if (!pathEndsWithDirectorySeparator(candidate)) {
+        if (!onlyRecordFailures) {
+            const parentOfCandidate = getDirectoryPath(candidate);
+            if (!directoryProbablyExists(parentOfCandidate, state.host)) {
+                onlyRecordFailures = true;
+            }
+        }
+        const resolvedFromFile = loadModuleFromFile(candidate, failedLookupLocations, onlyRecordFailures, state);
+        if (resolvedFromFile) {
+            return noPackageId(resolvedFromFile);
+        }
     }
 }
 
+/**
+ * @param {boolean} onlyRecordFailures - if true then function won't try to actually load files but instead record all attempts as failures. This flag is necessary
+ * in cases when we know upfront that all load attempts will fail (because containing folder does not exists) however we still need to record all failed lookup locations.
+ */
+function loadModuleFromFile(candidate: string, failedLookupLocations: Push<string>, onlyRecordFailures: boolean, state: ModuleResolutionState): PathAndExtension | undefined {
+    const path = tryFile(candidate, failedLookupLocations, onlyRecordFailures, state);
+    return path && { path, ext: Extension.Sol };
+}
+
 /** Return the file if it exists. */
-function tryFile(fileName: string, failedLookupLocations: Push<string>, host: ModuleResolutionHost): string | undefined {
-    if (host.fileExists(fileName)) {
-        return fileName;
+function tryFile(fileName: string, failedLookupLocations: Push<string>, onlyRecordFailures: boolean, state: ModuleResolutionState): string | undefined {
+    if (!onlyRecordFailures) {
+        if (state.host.fileExists(fileName)) {
+            return fileName;
+        }
     }
     failedLookupLocations.push(fileName);
     return undefined;
+}
+
+export function directoryProbablyExists(directoryName: string, host: { directoryExists?: (directoryName: string) => boolean }): boolean {
+    // if host does not support 'directoryExists' assume that directory will exist
+    return !host.directoryExists || host.directoryExists(directoryName);
+}
+
+function withPackageId(packageId: PackageId | undefined, r: PathAndExtension | undefined): Resolved {
+    return r && { path: r.path, extension: r.ext, packageId };
+}
+
+function noPackageId(r: PathAndExtension | undefined): Resolved {
+    return withPackageId(/*packageId*/ undefined, r);
 }

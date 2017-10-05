@@ -2,6 +2,10 @@
 // arbitrary file name can be converted to Path via toPath function
 export type Path = string & { __pathBrand: any };
 
+export const enum Extension {
+    Sol = ".sol"
+}
+
 /** ES6 Map interface, only read methods included. */
 export interface ReadonlyMap<T> {
     get(key: string): T | undefined;
@@ -180,10 +184,21 @@ export const enum CharacterCodes {
 export interface ResolvedModule {
     /** Path of the file the module was resolved to. */
     resolvedFileName: string;
+    /** True if `resolvedFileName` comes from `node_modules`. */
+    isExternalLibraryImport?: boolean;
+}
+
+export interface ResolvedModuleFull extends ResolvedModule {
+    /**
+     * Extension of resolvedFileName. This must match what's at the end of resolvedFileName.
+     * This is optional for backwards-compatibility, but will be added if not provided.
+     */
+    extension: Extension;
+    packageId?: PackageId;
 }
 
 export interface ResolvedModuleWithFailedLookupLocations {
-    readonly resolvedModule: ResolvedModule | undefined;
+    readonly resolvedModule: ResolvedModuleFull | undefined;
     /* @internal */
     readonly failedLookupLocations: ReadonlyArray<string>;
 }

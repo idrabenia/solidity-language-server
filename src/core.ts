@@ -2,7 +2,7 @@ import * as url from "url";
 
 import { Observable } from "@reactivex/rxjs";
 
-import { CharacterCodes, Map, Path } from "./types";
+import { CharacterCodes, Extension, Map, Path } from "./types";
 
 const enum Comparison {
     LessThan = -1,
@@ -219,6 +219,20 @@ export function normalizePath(path: string): string {
     }
 }
 
+export function normalizePathAndParts(path: string): { path: string, parts: string[] } {
+    path = normalizeSlashes(path);
+    const rootLength = getRootLength(path);
+    const root = path.substr(0, rootLength);
+    const parts = getNormalizedParts(path, rootLength);
+    if (parts.length) {
+        const joinedParts = root + parts.join(directorySeparator);
+        return { path: pathEndsWithDirectorySeparator(path) ? joinedParts + directorySeparator : joinedParts, parts };
+    }
+    else {
+        return { path: root, parts };
+    }
+}
+
 export function combinePaths(path1: string, path2: string) {
     if (!(path1 && path1.length)) return path2;
     if (!(path2 && path2.length)) return path1;
@@ -305,7 +319,7 @@ interface FileMatcherPatterns {
     basePaths: string[];
 }
 
-function contains<T>(array: T[], value: T): boolean {
+export function contains<T>(array: T[], value: T): boolean {
     if (array) {
         for (const v of array) {
             if (v === value) {
@@ -635,4 +649,32 @@ export function getBaseFileName(path: string) {
 
 export function hasExtension(fileName: string): boolean {
     return getBaseFileName(fileName).indexOf(".") >= 0;
+}
+
+const extensionsToRemove = [Extension.Sol];
+export function removeFileExtension(path: string): string {
+    for (const ext of extensionsToRemove) {
+        const extensionless = tryRemoveExtension(path, ext);
+        if (extensionless !== undefined) {
+            return extensionless;
+        }
+    }
+    return path;
+}
+
+export function tryRemoveExtension(path: string, extension: string): string | undefined {
+    return fileExtensionIs(path, extension) ? removeExtension(path, extension) : undefined;
+}
+
+export function removeExtension(path: string, extension: string): string {
+    return path.substring(0, path.length - extension.length);
+}
+
+/**
+ *  List of supported extensions in order of file resolution precedence.
+ */
+export const supportedSolidityExtensions: ReadonlyArray<Extension> = [Extension.Sol];
+
+export function hasSolidityFileExtension(fileName: string) {
+    return forEach(supportedSolidityExtensions, extension => fileExtensionIs(fileName, extension));
 }
