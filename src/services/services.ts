@@ -4,8 +4,8 @@ import {
     Position
 } from "vscode-languageserver";
 
-import * as diagnostics from "../diagnostics";
-import { ModuleResolutionHost } from "../types";
+import * as diagnostics from "../compiler/diagnostics";
+import { ModuleResolutionHost } from "../compiler/types";
 import * as completions from "./completions";
 import { LanguageService, LanguageServiceHost } from "./types";
 

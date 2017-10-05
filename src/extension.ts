@@ -1,3 +1,5 @@
+import * as path from "path";
+
 // The module 'vscode' contains the VS Code extensibility API
 // Import the module and reference it with the alias vscode in your code below
 import * as vscode from "vscode";
@@ -7,8 +9,6 @@ import {
     ServerOptions,
     TransportKind
 } from "vscode-languageclient";
-
-import { combinePaths } from "./core";
 
 // this method is called when your extension is activated
 // your extension is activated the very first time the command is executed
@@ -30,7 +30,7 @@ export function activate(context: vscode.ExtensionContext) {
 
     context.subscriptions.push(disposable);
 
-    const serverModule = combinePaths(__dirname, "languageServerIpc.js");
+    const serverModule = path.join(__dirname, "server", "languageServerIpc.js");
 
     const serverOptions: ServerOptions = {
         debug: {

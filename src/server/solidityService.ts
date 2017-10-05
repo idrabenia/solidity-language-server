@@ -13,8 +13,8 @@ import {
     TextDocumentSyncKind
 } from "vscode-languageserver";
 
-import { normalizeUri, path2uri, uri2path } from "./core";
-import { soliumDefaultRules } from "./diagnostics";
+import { normalizeUri, path2uri, uri2path } from "../compiler/core";
+import { soliumDefaultRules } from "../compiler/diagnostics";
 import { FileSystem, FileSystemUpdater, LocalFileSystem, RemoteFileSystem } from "./fs";
 import { LanguageClient } from "./languageClient";
 import { LSPLogger, Logger } from "./logging";

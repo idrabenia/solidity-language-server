@@ -4,7 +4,7 @@ import {
     Position
 } from "vscode-languageserver";
 
-import { CompilerOptions } from "../types";
+import { CompilerOptions } from "../compiler/types";
 
 //
 // Public services of a language service instance associated

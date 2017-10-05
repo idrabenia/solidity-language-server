@@ -4,7 +4,7 @@ import * as fs from "mz/fs";
 import * as rimraf from "rimraf";
 import * as temp from "temp";
 
-import { path2uri } from "../core";
+import { path2uri } from "../../compiler/core";
 import { LocalFileSystem } from "../fs";
 
 describe("fs.ts", () => {

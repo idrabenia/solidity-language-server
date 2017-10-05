@@ -3,15 +3,15 @@ import * as glob from "glob";
 import iterate from "iterare";
 import * as _ from "lodash";
 
-import { isPackageJsonFile, isSolidityFile, observableFromIterable, path2uri, toUnixPath, uri2path } from "./core";
+import { isPackageJsonFile, isSolidityFile, observableFromIterable, path2uri, toUnixPath, uri2path } from "../compiler/core";
+import { resolveModuleName } from "../compiler/moduleNameResolver";
+import { CompilerOptions } from "../compiler/types";
+import { preProcessFile } from "../services/preProcessFile";
+import { createLanguageService } from "../services/services";
+import { LanguageService, LanguageServiceHost } from "../services/types";
 import { FileSystemUpdater } from "./fs";
 import { Logger, NoopLogger } from "./logging";
 import { InMemoryFileSystem } from "./memfs";
-import { resolveModuleName } from "./moduleNameResolver";
-import { preProcessFile } from "./services/preProcessFile";
-import { createLanguageService } from "./services/services";
-import { LanguageService, LanguageServiceHost } from "./services/types";
-import { CompilerOptions } from "./types";
 
 export class ProjectManager {
     /**
