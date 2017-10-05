@@ -349,6 +349,7 @@ export class ProjectManager {
             .concat(Observable.defer(() => {
                 const referencingFilePath = uri2path(uri);
                 const config = this.getConfiguration(referencingFilePath);
+                config.ensureConfigFile();
                 const contents = this.inMemoryFs.getContent(uri);
                 const info = preProcessFile(contents);
                 const compilerOpt = config.getHost().getCompilationSettings();

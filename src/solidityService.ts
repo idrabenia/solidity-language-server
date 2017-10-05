@@ -265,6 +265,7 @@ export class SolidityService {
                 const fileName: string = uri2path(uri);
 
                 const configuration = this.projectManager.getConfiguration(fileName);
+                configuration.ensureConfigFile();
 
                 const completions = configuration.getService().getCompletionsAtPosition(fileName, params.position);
 
