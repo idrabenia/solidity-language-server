@@ -1,3 +1,5 @@
+import { Diagnostic } from "vscode-languageserver";
+
 // branded string type used to store absolute, normalized and canonicalized paths
 // arbitrary file name can be converted to Path via toPath function
 export type Path = string & { __pathBrand: any };
@@ -24,6 +26,74 @@ export interface Map<T> extends ReadonlyMap<T> {
     clear(): void;
 }
 
+/* @internal */
+export interface RedirectInfo {
+    /** Source file this redirects to. */
+    readonly redirectTarget: SourceFile;
+    /**
+     * Source file for the duplicate package. This will not be used by the Program,
+     * but we need to keep this around so we can watch for changes in underlying.
+     */
+    readonly unredirected: SourceFile;
+}
+
+export interface SourceFile {
+    fileName: string;
+    /* @internal */ path: Path;
+    text: string;
+
+    /**
+     * If two source files are for the same version of the same package, one will redirect to the other.
+     * (See `createRedirectSourceFile` in program.ts.)
+     * The redirect will have this set. The other will not have anything set, but see Program#sourceFileIsRedirectedTo.
+     */
+    /* @internal */ redirectInfo?: RedirectInfo | undefined;
+
+    /* @internal */ resolvedModules: Map<ResolvedModuleFull>;
+    /* @internal */ imports: ReadonlyArray<string>;
+    /* @internal */ version: string;
+}
+
+/* @internal */
+export interface HasInvalidatedResolution {
+    (sourceFile: Path): boolean;
+}
+
+export interface ScriptReferenceHost {
+    getCompilerOptions(): CompilerOptions;
+    getSourceFile(fileName: string): SourceFile;
+    getSourceFileByPath(path: Path): SourceFile;
+    getCurrentDirectory(): string;
+}
+
+export interface Program extends ScriptReferenceHost {
+    /**
+     * Get a list of root file names that were passed to a 'createProgram'
+     */
+    getRootFileNames(): ReadonlyArray<string>;
+
+    /**
+     * Get a list of files in the program
+     */
+    getSourceFiles(): ReadonlyArray<SourceFile>;
+
+    /**
+     * Get a list of file names that were passed to 'createProgram' or referenced in a
+     * program source file but could not be located.
+     */
+    /* @internal */
+    getMissingFilePaths(): ReadonlyArray<Path>;
+
+    /* @internal */ getFileProcessingDiagnostics(): Diagnostic[];
+
+    /** Given a source file, get the name of the package it was imported from. */
+    /* @internal */ sourceFileToPackageName: Map<string>;
+    /** Set of all source files that some other source file redirects to. */
+    /* @internal */ redirectTargetsSet: Map<true>;
+    /** Returns true when file in the program had invalidated resolution at the time of program creation. */
+    /* @internal */ hasInvalidatedResolution: HasInvalidatedResolution;
+}
+
 export interface CompilerOptions {
     optimize: boolean;
 }
@@ -40,6 +110,16 @@ export interface ModuleResolutionHost {
     realpath?(path: string): string;
     getCurrentDirectory?(): string;
     getDirectories?(path: string): string[];
+}
+
+export interface CompilerHost extends ModuleResolutionHost {
+    getSourceFile(fileName: string, onError?: (message: string) => void, shouldCreateNewSourceFile?: boolean): SourceFile | undefined;
+    getSourceFileByPath?(fileName: string, path: Path, onError?: (message: string) => void, shouldCreateNewSourceFile?: boolean): SourceFile | undefined;
+    getCanonicalFileName(fileName: string): string;
+
+    useCaseSensitiveFileNames(): boolean;
+
+    /* @internal */ hasInvalidatedResolution?: HasInvalidatedResolution;
 }
 
 export const enum CharacterCodes {

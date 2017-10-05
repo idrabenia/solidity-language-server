@@ -1014,6 +1014,17 @@ export function returnFalse(): false { return false; }
 /** Do nothing and return true */
 export function returnTrue(): true { return true; }
 
+export function memoize<T>(callback: () => T): () => T {
+    let value: T;
+    return () => {
+        if (callback) {
+            value = callback();
+            callback = undefined;
+        }
+        return value;
+    };
+}
+
 export const enum AssertionLevel {
     None = 0,
     Normal = 1,

@@ -1,5 +1,7 @@
-import { getDirectoryPath } from "./core";
-import { PackageId } from "./types";
+import { createMap, getDirectoryPath } from "./core";
+import { PackageId, ResolvedModuleFull, SourceFile } from "./types";
+
+export const emptyArray: never[] = [] as never[];
 
 export function packageIdIsEqual(a: PackageId | undefined, b: PackageId | undefined): boolean {
     return a === b || a && b && a.name === b.name && a.subModuleName === b.subModuleName && a.version === b.version;
@@ -20,4 +22,12 @@ export function forEachAncestorDirectory<T>(directory: string, callback: (direct
 
         directory = parentPath;
     }
+}
+
+export function setResolvedModule(sourceFile: SourceFile, moduleNameText: string, resolvedModule: ResolvedModuleFull): void {
+    if (!sourceFile.resolvedModules) {
+        sourceFile.resolvedModules = createMap<ResolvedModuleFull>();
+    }
+
+    sourceFile.resolvedModules.set(moduleNameText, resolvedModule);
 }
