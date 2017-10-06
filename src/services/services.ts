@@ -5,15 +5,22 @@ import {
 } from "vscode-languageserver";
 
 import { returnFalse } from "../compiler/core";
-import * as diagnostics from "../compiler/diagnostics";
 import { createProgram, isProgramUptoDate } from "../compiler/program";
-import { HasInvalidatedResolution, ModuleResolutionHost, Program } from "../compiler/types";
+import { HasInvalidatedResolution, Program, SourceFile } from "../compiler/types";
 import * as completions from "./completions";
 import { LanguageService, LanguageServiceHost } from "./types";
 
 export function createLanguageService(host: LanguageServiceHost): LanguageService {
     let program: Program;
     let lastProjectVersion: string;
+
+    function getValidSourceFile(fileName: string): SourceFile {
+        const sourceFile = program.getSourceFile(fileName);
+        if (!sourceFile) {
+            throw new Error("Could not find file: '" + fileName + "'.");
+        }
+        return sourceFile;
+    }
 
     function synchronizeHostData(): void {
         // perform fast check if host supports it
@@ -45,19 +52,6 @@ export function createLanguageService(host: LanguageServiceHost): LanguageServic
         return;
     }
 
-    function fileExists(fileName: string) {
-        return host.fileExists && host.fileExists(fileName);
-    }
-
-    function readFile(fileName: string, _encoding?: string) {
-        return host.readFile && host.readFile(fileName);
-    }
-
-    const moduleResolutionHost: ModuleResolutionHost = {
-        fileExists,
-        readFile
-    };
-
     function getProgram(): Program {
         synchronizeHostData();
 
@@ -68,13 +62,23 @@ export function createLanguageService(host: LanguageServiceHost): LanguageServic
         return completions.getCompletionsAtPosition(host, fileName, position);
     }
 
-    function getDiagnostics(fileName: string): Diagnostic[] {
-        return diagnostics.getDiagnostics(moduleResolutionHost, fileName);
+    /// Diagnostics
+    function getCompilerDiagnostics(fileName: string): Diagnostic[] {
+        synchronizeHostData();
+
+        return program.getCompilerDiagnostics(getValidSourceFile(fileName)).slice();
+    }
+
+    function getLinterDiagnostics(fileName: string): Diagnostic[] {
+        synchronizeHostData();
+
+        return program.getLinterDiagnostics(getValidSourceFile(fileName)).slice();
     }
 
     return {
         getProgram,
         getCompletionsAtPosition,
-        getDiagnostics
+        getCompilerDiagnostics,
+        getLinterDiagnostics
     };
 }

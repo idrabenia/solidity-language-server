@@ -1,8 +1,8 @@
 import {
     CompletionItem,
-    Diagnostic,
     Position
 } from "vscode-languageserver";
+import { Diagnostic } from "vscode-languageserver";
 
 import { CompilerOptions, HasInvalidatedResolution, Program } from "../compiler/types";
 
@@ -12,7 +12,8 @@ import { CompilerOptions, HasInvalidatedResolution, Program } from "../compiler/
 //
 export interface LanguageService {
     getCompletionsAtPosition(fileName: string, position: Position): CompletionItem[];
-    getDiagnostics(path: string): Diagnostic[];
+    getCompilerDiagnostics(fileName: string): Diagnostic[];
+    getLinterDiagnostics(fileName: string): Diagnostic[];
 
     getProgram(): Program;
 }

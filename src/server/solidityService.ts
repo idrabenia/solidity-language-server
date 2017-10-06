@@ -13,7 +13,7 @@ import {
     TextDocumentSyncKind
 } from "vscode-languageserver";
 
-import { soliumDefaultRules } from "../compiler/diagnostics";
+import { soliumDefaultRules } from "../compiler/program";
 import { FileSystem, FileSystemUpdater, LocalFileSystem, RemoteFileSystem } from "./fs";
 import { LanguageClient } from "./languageClient";
 import { LSPLogger, Logger } from "./logging";
@@ -236,7 +236,7 @@ export class SolidityService {
             return;
         }
         const fileName = uri2path(uri);
-        const diagnostics = config.getService().getDiagnostics(fileName);
+        const diagnostics = config.getService().getCompilerDiagnostics(fileName).concat(config.getService().getLinterDiagnostics(fileName));
         this.client.textDocumentPublishDiagnostics({ uri, diagnostics });
     }
 

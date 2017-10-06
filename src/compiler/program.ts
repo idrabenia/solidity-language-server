@@ -3,12 +3,15 @@ import { Diagnostic, DiagnosticSeverity, Range } from "vscode-languageserver";
 import * as core from "./core";
 import { arrayFrom, getDirectoryPath, getRootLength, memoize, returnFalse } from "./core";
 import { Debug, createMap, forEach, getNormalizedAbsolutePath, normalizePath } from "./core";
+import { solcErrToDiagnostic, soliumErrObjectToDiagnostic } from "./diagnostics";
 import { createModuleResolutionCache, resolveModuleName } from "./moduleNameResolver";
 import { sys } from "./sys";
 import { CompilerHost, CompilerOptions, HasInvalidatedResolution, PackageId, Path, Program, SourceFile } from "./types";
 import { compareDataObjects, emptyArray, setResolvedModule } from "./utilities";
 
 const solparse = require("solparse");
+const solc = require("solc");
+const Solium = require("solium");
 
 /**
  * Create a new 'Program' instance. A Program is an immutable collection of 'SourceFile's and a 'CompilerOptions'
@@ -62,6 +65,8 @@ export function createProgram(rootNames: ReadonlyArray<string>, options: Compile
         getSourceFileByPath,
         getSourceFiles: () => files,
         getMissingFilePaths: () => missingFilePaths,
+        getCompilerDiagnostics,
+        getLinterDiagnostics,
         getCompilerOptions: () => options,
         getCurrentDirectory: () => currentDirectory,
         getFileProcessingDiagnostics: () => fileProcessingDiagnostics,
@@ -224,6 +229,59 @@ export function createProgram(rootNames: ReadonlyArray<string>, options: Compile
             file.resolvedModules = undefined;
         }
     }
+
+    function getCompilerDiagnostics(sourceFile: SourceFile): ReadonlyArray<Diagnostic> {
+        const input = { [sourceFile.fileName]: sourceFile.text };
+        collectSources(sourceFile);
+
+        const output = compileContracts({ sources: input });
+        if (!output.errors) return [];
+        return output.errors.map(solcErrToDiagnostic);
+
+        function collectSources(sourceFile: SourceFile) {
+            if (sourceFile.resolvedModules) {
+                sourceFile.resolvedModules.forEach(resolved => {
+                    if (resolved) {
+                        const sourceFile = program.getSourceFileByPath(toPath(resolved.resolvedFileName));
+                        input[sourceFile.fileName] = sourceFile.text;
+                        collectSources(sourceFile);
+                    }
+                });
+            }
+        }
+
+        function compileContracts(sources: any): { errors: string[] } {
+            // Setting 1 as second paramater activates the optimiser
+            return solc.compile(sources, 1);
+        }
+    }
+
+    function getLinterDiagnostics(sourceFile: SourceFile): ReadonlyArray<Diagnostic> {
+        try {
+            const errorObjects = Solium.lint(sourceFile.text, { rules: soliumDefaultRules });
+            return errorObjects.map(soliumErrObjectToDiagnostic);
+        } catch (err) {
+            const match = /An error .*?\nSyntaxError: (.*?) Line: (\d+), Column: (\d+)/.exec(err.message);
+            if (!match) {
+                // FIXME: Send an error message.
+                return [];
+            }
+
+            const line = parseInt(match[2], 10) - 1;
+            const character = parseInt(match[3], 10) - 1;
+
+            return [
+                {
+                    message: `Syntax error: ${match[1]}`,
+                    range: {
+                        start: { character, line },
+                        end: { character, line }
+                    },
+                    severity: DiagnosticSeverity.Error,
+                },
+            ];
+        }
+    }
 }
 
 function checkAllDefined(names: string[]): string[] {
@@ -366,3 +424,32 @@ export function isProgramUptoDate(
             hasInvalidatedResolution(sourceFile.path);
     }
 }
+
+export function getDiagnostics(program: Program, sourceFile: SourceFile): Diagnostic[] {
+    const diagnostics = [
+        ...program.getCompilerDiagnostics(sourceFile),
+        ...program.getLinterDiagnostics(sourceFile)
+    ];
+
+    return diagnostics;
+}
+
+export const soliumDefaultRules = {
+    "array-declarations": true,
+    "blank-lines": false,
+    "camelcase": true,
+    "deprecated-suicide": true,
+    "double-quotes": true,
+    "imports-on-top": true,
+    "indentation": false,
+    "lbrace": true,
+    "mixedcase": true,
+    "no-empty-blocks": true,
+    "no-unused-vars": true,
+    "no-with": true,
+    "operator-whitespace": true,
+    "pragma-on-top": true,
+    "uppercase": true,
+    "variable-declarations": true,
+    "whitespace": true
+};
