@@ -5,7 +5,7 @@ import iterate from "iterare";
 import { isPackageJsonFile, isSolidityFile, noop } from "../compiler/core";
 import { resolveModuleName } from "../compiler/moduleNameResolver";
 import { CompilerOptions, Program } from "../compiler/types";
-import { preProcessFile } from "../services/preProcessFile";
+import { preProcessFile } from "../services/preProcess";
 import { createLanguageService } from "../services/services";
 import { LanguageService, LanguageServiceHost } from "../services/types";
 import { FileSystemUpdater } from "./fs";
