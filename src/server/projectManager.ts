@@ -631,17 +631,17 @@ export class ProjectConfiguration {
 
     /**
      * Tells Solidity service to recompile program (if needed) based on current list of files and compilation options.
-     * TS service relies on information provided by language servide host to see if there were any changes in
+     * Solidity service relies on information provided by language servide host to see if there were any changes in
      * the whole project or in some files
      *
-     * @return program object (cached result of parsing and typechecking done by TS service)
+     * @return program object (cached result of parsing and typechecking done by Solidity service)
      */
     public getProgram(): Program | undefined {
         return this.getService().getProgram();
     }
 
     /**
-     * @return language service host that TS service uses to read the data
+     * @return language service host that Solidity service uses to read the data
      */
     public getHost(): InMemoryLanguageServiceHost {
         if (!this.host) {
