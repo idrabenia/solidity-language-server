@@ -4,7 +4,7 @@ import {
     Position
 } from "vscode-languageserver";
 
-import { CompilerOptions } from "../compiler/types";
+import { CompilerOptions, HasInvalidatedResolution, Program } from "../compiler/types";
 
 //
 // Public services of a language service instance associated
@@ -13,6 +13,8 @@ import { CompilerOptions } from "../compiler/types";
 export interface LanguageService {
     getCompletionsAtPosition(fileName: string, position: Position): CompletionItem[];
     getDiagnostics(path: string): Diagnostic[];
+
+    getProgram(): Program;
 }
 
 //
@@ -34,6 +36,8 @@ export interface LanguageServiceHost {
     readFile?(path: string, encoding?: string): string;
     fileExists?(path: string): boolean;
     directoryExists?(directoryName: string): boolean;
+
+    /* @internal */ hasInvalidatedResolution?: HasInvalidatedResolution;
 
     /*
      * getDirectories is also required for full import and type reference completions. Without it defined, certain

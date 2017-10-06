@@ -5,8 +5,8 @@ import { arrayFrom, getDirectoryPath, getRootLength, memoize, returnFalse } from
 import { Debug, createMap, forEach, getNormalizedAbsolutePath, normalizePath } from "./core";
 import { createModuleResolutionCache, resolveModuleName } from "./moduleNameResolver";
 import { sys } from "./sys";
-import { CompilerHost, CompilerOptions, PackageId, Path, Program, SourceFile } from "./types";
-import { emptyArray, setResolvedModule } from "./utilities";
+import { CompilerHost, CompilerOptions, HasInvalidatedResolution, PackageId, Path, Program, SourceFile } from "./types";
+import { compareDataObjects, emptyArray, setResolvedModule } from "./utilities";
 
 const solparse = require("solparse");
 
@@ -319,4 +319,50 @@ export function createSourceFile(fileName: string, sourceText: string): SourceFi
         fileName,
         text: sourceText
     } as SourceFile;
+}
+
+/**
+ * Determines if program structure is upto date or needs to be recreated
+ */
+/* @internal */
+export function isProgramUptoDate(
+    program: Program | undefined,
+    rootFileNames: string[],
+    newOptions: CompilerOptions,
+    getSourceVersion: (path: Path) => string,
+    fileExists: (fileName: string) => boolean,
+    hasInvalidatedResolution: HasInvalidatedResolution
+): boolean {
+    // If we haven't create a program yet or has changed automatic type directives, then it is not up-to-date
+    if (!program) {
+        return false;
+    }
+
+    // If number of files in the program do not match, it is not up-to-date
+    if (program.getRootFileNames().length !== rootFileNames.length) {
+        return false;
+    }
+
+    // If any file is not up-to-date, then the whole program is not up-to-date
+    if (program.getSourceFiles().some(sourceFileNotUptoDate)) {
+        return false;
+    }
+
+    // If any of the missing file paths are now created
+    if (program.getMissingFilePaths().some(fileExists)) {
+        return false;
+    }
+
+    const currentOptions = program.getCompilerOptions();
+    // If the compilation settings do no match, then the program is not up-to-date
+    if (!compareDataObjects(currentOptions, newOptions)) {
+        return false;
+    }
+
+    return true;
+
+    function sourceFileNotUptoDate(sourceFile: SourceFile): boolean {
+        return sourceFile.version !== getSourceVersion(sourceFile.path) ||
+            hasInvalidatedResolution(sourceFile.path);
+    }
 }

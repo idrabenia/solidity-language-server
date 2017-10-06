@@ -1101,3 +1101,9 @@ export namespace Debug {
         }
     }
 }
+
+export function createGetCanonicalFileName(useCaseSensitiveFileNames: boolean): (fileName: string) => string {
+    return useCaseSensitiveFileNames
+        ? ((fileName) => fileName)
+        : ((fileName) => fileName.toLowerCase());
+}
