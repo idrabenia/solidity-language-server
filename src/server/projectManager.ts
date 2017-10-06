@@ -4,7 +4,7 @@ import iterate from "iterare";
 
 import { isPackageJsonFile, isSolidityFile, noop, observableFromIterable, path2uri, toUnixPath, uri2path } from "../compiler/core";
 import { resolveModuleName } from "../compiler/moduleNameResolver";
-import { CompilerOptions } from "../compiler/types";
+import { CompilerOptions, Program } from "../compiler/types";
 import { preProcessFile } from "../services/preProcessFile";
 import { createLanguageService } from "../services/services";
 import { LanguageService, LanguageServiceHost } from "../services/types";
@@ -627,6 +627,17 @@ export class ProjectConfiguration {
             throw new Error("project is uninitialized");
         }
         return this.service;
+    }
+
+    /**
+     * Tells Solidity service to recompile program (if needed) based on current list of files and compilation options.
+     * TS service relies on information provided by language servide host to see if there were any changes in
+     * the whole project or in some files
+     *
+     * @return program object (cached result of parsing and typechecking done by TS service)
+     */
+    public getProgram(): Program | undefined {
+        return this.getService().getProgram();
     }
 
     /**
