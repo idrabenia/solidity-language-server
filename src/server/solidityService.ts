@@ -13,7 +13,6 @@ import {
     TextDocumentSyncKind
 } from "vscode-languageserver";
 
-import { normalizeUri, path2uri, uri2path } from "../compiler/core";
 import { soliumDefaultRules } from "../compiler/diagnostics";
 import { FileSystem, FileSystemUpdater, LocalFileSystem, RemoteFileSystem } from "./fs";
 import { LanguageClient } from "./languageClient";
@@ -21,6 +20,7 @@ import { LSPLogger, Logger } from "./logging";
 import { InMemoryFileSystem } from "./memfs";
 import { ProjectManager } from "./projectManager";
 import { InitializeParams } from "./requestType";
+import { normalizeUri, path2uri, uri2path } from "./utilities";
 
 export interface SolidityServiceOptions {
 }

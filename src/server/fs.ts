@@ -3,9 +3,9 @@ import { Glob } from "glob";
 import * as fs from "mz/fs";
 import Semaphore from "semaphore-async-await";
 
-import { normalizeUri, uri2path } from "../compiler/core";
 import { LanguageClient } from "./languageClient";
 import { InMemoryFileSystem } from "./memfs";
+import { normalizeUri, uri2path } from "./utilities";
 
 export interface FileSystem {
     /**

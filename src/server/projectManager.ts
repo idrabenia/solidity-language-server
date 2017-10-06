@@ -2,7 +2,7 @@ import { Observable } from "@reactivex/rxjs";
 import * as glob from "glob";
 import iterate from "iterare";
 
-import { isPackageJsonFile, isSolidityFile, noop, observableFromIterable, path2uri, toUnixPath, uri2path } from "../compiler/core";
+import { isPackageJsonFile, isSolidityFile, noop } from "../compiler/core";
 import { resolveModuleName } from "../compiler/moduleNameResolver";
 import { CompilerOptions, Program } from "../compiler/types";
 import { preProcessFile } from "../services/preProcessFile";
@@ -11,6 +11,7 @@ import { LanguageService, LanguageServiceHost } from "../services/types";
 import { FileSystemUpdater } from "./fs";
 import { Logger, NoopLogger } from "./logging";
 import { InMemoryFileSystem } from "./memfs";
+import { observableFromIterable, path2uri, toUnixPath, uri2path } from "./utilities";
 
 export class ProjectManager {
     /**

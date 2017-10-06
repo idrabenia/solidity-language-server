@@ -1,4 +1,4 @@
-import { path2uri, uri2path } from "../core";
+import { path2uri, uri2path } from "../utilities";
 
 describe("path2uri()", () => {
     test("should throw an error if a non-absolute uri is passed in", () => {
