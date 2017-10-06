@@ -515,6 +515,10 @@ export class InMemoryLanguageServiceHost implements LanguageServiceHost {
     public error(message: string) {
         this.logger.error(message);
     }
+
+    public useCaseSensitiveFileNames(): boolean {
+        return true;
+    }
 }
 
 /**
