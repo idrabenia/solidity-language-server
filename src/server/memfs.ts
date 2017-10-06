@@ -200,6 +200,7 @@ export class InMemoryFileSystem extends EventEmitter implements ModuleResolution
             includes,
             true,
             this.path,
+            undefined,
             p => this.getFileSystemEntries(p));
     }
 

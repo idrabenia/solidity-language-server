@@ -10,8 +10,6 @@ const enum Comparison {
     GreaterThan = 1,
 }
 
-const singleAsteriskRegexFragmentFiles = "([^./]|(\\.(?!min\\.js$))?)*";
-const singleAsteriskRegexFragmentOther = "[^/]*";
 const reservedCharacterPattern = /[^\w\s\/]/g;
 
 export function toPath(fileName: string, basePath: string, getCanonicalFileName: (path: string) => string): Path {
@@ -140,6 +138,30 @@ function toOffset(array: ReadonlyArray<any>, offset: number) {
 }
 
 /**
+ * Appends a range of value to an array, returning the array.
+ *
+ * @param to The array to which `value` is to be appended. If `to` is `undefined`, a new array
+ * is created if `value` was appended.
+ * @param from The values to append to the array. If `from` is `undefined`, nothing is
+ * appended. If an element of `from` is `undefined`, that element is not appended.
+ * @param start The offset in `from` at which to start copying values.
+ * @param end The offset in `from` at which to stop copying values (non-inclusive).
+ */
+export function addRange<T>(to: T[] | undefined, from: ReadonlyArray<T> | undefined, start?: number, end?: number): T[] | undefined {
+    if (from === undefined || from.length === 0) return to;
+    if (to === undefined) return from.slice(start, end);
+    start = start === undefined ? 0 : toOffset(from, start);
+    end = end === undefined ? from.length : toOffset(from, end);
+    for (let i = start; i < end && i < from.length; i++) {
+        const v = from[i];
+        if (v !== undefined) {
+            to.push(from[i]);
+        }
+    }
+    return to;
+}
+
+/**
  * Returns the element at a specific offset in an array if non-empty, `undefined` otherwise.
  * A negative offset indicates the element should be retrieved from the end of the array.
  */
@@ -165,6 +187,101 @@ export function firstOrUndefined<T>(array: ReadonlyArray<T>): T | undefined {
  */
 export function lastOrUndefined<T>(array: ReadonlyArray<T>): T | undefined {
     return elementAt(array, -1);
+}
+
+/**
+ * Iterates through `array` by index and performs the callback on each element of array until the callback
+ * returns a falsey value, then returns false.
+ * If no such value is found, the callback is applied to each element of array and `true` is returned.
+ */
+export function every<T>(array: ReadonlyArray<T>, callback: (element: T, index: number) => boolean): boolean {
+    if (array) {
+        for (let i = 0; i < array.length; i++) {
+            if (!callback(array[i], i)) {
+                return false;
+            }
+        }
+    }
+
+    return true;
+}
+
+export function some<T>(array: ReadonlyArray<T>, predicate?: (value: T) => boolean): boolean {
+    if (array) {
+        if (predicate) {
+            for (const v of array) {
+                if (predicate(v)) {
+                    return true;
+                }
+            }
+        }
+        else {
+            return array.length > 0;
+        }
+    }
+    return false;
+}
+
+export interface MultiMap<T> extends Map<T[]> {
+    /**
+     * Adds the value to an array of values associated with the key, and returns the array.
+     * Creates the array if it does not already exist.
+     */
+    add(key: string, value: T): T[];
+    /**
+     * Removes a value from an array of values associated with the key.
+     * Does not preserve the order of those values.
+     * Does nothing if `key` is not in `map`, or `value` is not in `map[key]`.
+     */
+    remove(key: string, value: T): void;
+}
+
+export function createMultiMap<T>(): MultiMap<T> {
+    const map = createMap<T[]>() as MultiMap<T>;
+    map.add = multiMapAdd;
+    map.remove = multiMapRemove;
+    return map;
+}
+function multiMapAdd<T>(this: MultiMap<T>, key: string, value: T) {
+    let values = this.get(key);
+    if (values) {
+        values.push(value);
+    }
+    else {
+        this.set(key, values = [value]);
+    }
+    return values;
+
+}
+function multiMapRemove<T>(this: MultiMap<T>, key: string, value: T) {
+    const values = this.get(key);
+    if (values) {
+        unorderedRemoveItem(values, value);
+        if (!values.length) {
+            this.delete(key);
+        }
+    }
+}
+
+/** Remove the *first* occurrence of `item` from the array. */
+export function unorderedRemoveItem<T>(array: T[], item: T): void {
+    unorderedRemoveFirstItemWhere(array, element => element === item);
+}
+
+/** Remove the *first* element satisfying `predicate`. */
+function unorderedRemoveFirstItemWhere<T>(array: T[], predicate: (element: T) => boolean): void {
+    for (let i = 0; i < array.length; i++) {
+        if (predicate(array[i])) {
+            unorderedRemoveItemAt(array, i);
+            break;
+        }
+    }
+}
+
+export function unorderedRemoveItemAt<T>(array: T[], index: number): void {
+    // Fill in the "hole" left at `index`.
+    array[index] = array[array.length - 1];
+    array.pop();
 }
 
 /**
@@ -269,57 +386,102 @@ export interface FileSystemEntries {
     directories: string[];
 }
 
-export function matchFiles(path: string, extensions: string[], excludes: string[], includes: string[], useCaseSensitiveFileNames: boolean, currentDirectory: string, getFileSystemEntries: (path: string) => FileSystemEntries): string[] {
+/** Works like Array.prototype.findIndex, returning `-1` if no element satisfying the predicate is found. */
+export function findIndex<T>(array: ReadonlyArray<T>, predicate: (element: T, index: number) => boolean): number {
+    for (let i = 0; i < array.length; i++) {
+        if (predicate(array[i], i)) {
+            return i;
+        }
+    }
+    return -1;
+}
+
+/**
+ * Flattens an array containing a mix of array or non-array elements.
+ *
+ * @param array The array to flatten.
+ */
+export function flatten<T>(array: ReadonlyArray<T | ReadonlyArray<T>>): T[] {
+    let result: T[];
+    if (array) {
+        result = [];
+        for (const v of array) {
+            if (v) {
+                if (isArray(v)) {
+                    addRange(result, v);
+                }
+                else {
+                    result.push(v);
+                }
+            }
+        }
+    }
+
+    return result;
+}
+
+export function matchFiles(path: string, extensions: ReadonlyArray<string>, excludes: ReadonlyArray<string>, includes: ReadonlyArray<string>, useCaseSensitiveFileNames: boolean, currentDirectory: string, depth: number | undefined, getFileSystemEntries: (path: string) => FileSystemEntries): string[] {
     path = normalizePath(path);
     currentDirectory = normalizePath(currentDirectory);
 
-    const patterns = getFileMatcherPatterns(path, extensions, excludes, includes, useCaseSensitiveFileNames, currentDirectory);
+    const patterns = getFileMatcherPatterns(path, excludes, includes, useCaseSensitiveFileNames, currentDirectory);
 
     const regexFlag = useCaseSensitiveFileNames ? "" : "i";
-
-    const includeFileRegex = patterns.includeFilePattern && new RegExp(patterns.includeFilePattern, regexFlag);
-
+    const includeFileRegexes = patterns.includeFilePatterns && patterns.includeFilePatterns.map(pattern => new RegExp(pattern, regexFlag));
     const includeDirectoryRegex = patterns.includeDirectoryPattern && new RegExp(patterns.includeDirectoryPattern, regexFlag);
     const excludeRegex = patterns.excludePattern && new RegExp(patterns.excludePattern, regexFlag);
 
-    const result: string[] = [];
-    for (const basePath of patterns.basePaths) {
-        visitDirectory(basePath, combinePaths(currentDirectory, basePath));
-    }
-    return result;
+    // Associate an array of results with each include regex. This keeps results in order of the "include" order.
+    // If there are no "includes", then just put everything in results[0].
+    const results: string[][] = includeFileRegexes ? includeFileRegexes.map(() => []) : [[]];
 
-    function visitDirectory(path: string, absolutePath: string) {
-        const { files, directories } = getFileSystemEntries(path);
+    const comparer = useCaseSensitiveFileNames ? compareStrings : compareStringsCaseInsensitive;
+    for (const basePath of patterns.basePaths) {
+        visitDirectory(basePath, combinePaths(currentDirectory, basePath), depth);
+    }
+
+    return flatten<string>(results);
+
+    function visitDirectory(path: string, absolutePath: string, depth: number | undefined) {
+        let { files, directories } = getFileSystemEntries(path);
+        files = files.slice().sort(comparer);
 
         for (const current of files) {
             const name = combinePaths(path, current);
             const absoluteName = combinePaths(absolutePath, current);
-            if ((!extensions || fileExtensionIsAny(name, extensions)) &&
-                (!includeFileRegex || includeFileRegex.test(absoluteName)) &&
-                (!excludeRegex || !excludeRegex.test(absoluteName))) {
-                result.push(name);
+            if (extensions && !fileExtensionIsOneOf(name, extensions)) continue;
+            if (excludeRegex && excludeRegex.test(absoluteName)) continue;
+            if (!includeFileRegexes) {
+                results[0].push(name);
+            }
+            else {
+                const includeIndex = findIndex(includeFileRegexes, re => re.test(absoluteName));
+                if (includeIndex !== -1) {
+                    results[includeIndex].push(name);
+                }
             }
         }
 
+        if (depth !== undefined) {
+            depth--;
+            if (depth === 0) {
+                return;
+            }
+        }
+
+        directories = directories.slice().sort(comparer);
         for (const current of directories) {
             const name = combinePaths(path, current);
             const absoluteName = combinePaths(absolutePath, current);
             if ((!includeDirectoryRegex || includeDirectoryRegex.test(absoluteName)) &&
                 (!excludeRegex || !excludeRegex.test(absoluteName))) {
-                visitDirectory(name, absoluteName);
+                visitDirectory(name, absoluteName, depth);
             }
         }
     }
 }
 
-interface FileMatcherPatterns {
-    includeFilePattern: string;
-    includeDirectoryPattern: string;
-    excludePattern: string;
-    basePaths: string[];
-}
-
-export function contains<T>(array: T[], value: T): boolean {
+export function contains<T>(array: ReadonlyArray<T>, value: T): boolean {
     if (array) {
         for (const v of array) {
             if (v === value) {
@@ -330,8 +492,8 @@ export function contains<T>(array: T[], value: T): boolean {
     return false;
 }
 
-function indexOfAnyCharCode(text: string, charCodes: number[], start?: number): number {
-    for (let i = start || 0, len = text.length; i < len; i++) {
+export function indexOfAnyCharCode(text: string, charCodes: ReadonlyArray<number>, start?: number): number {
+    for (let i = start || 0; i < text.length; i++) {
         if (contains(charCodes, text.charCodeAt(i))) {
             return i;
         }
@@ -339,7 +501,6 @@ function indexOfAnyCharCode(text: string, charCodes: number[], start?: number): 
     return -1;
 }
 
-const wildcardCharCodes = [CharacterCodes.asterisk, CharacterCodes.question];
 
 /**
  * Removes a trailing directory separator from a path.
@@ -377,9 +538,26 @@ function compareStringsCaseInsensitive(a: string, b: string) {
     return compareStrings(a, b, /*ignoreCase*/ true);
 }
 
-function getBasePaths(path: string, includes: string[], useCaseSensitiveFileNames: boolean) {
+const wildcardCharCodes = [CharacterCodes.asterisk, CharacterCodes.question];
+
+function getIncludeBasePath(absolute: string): string {
+    const wildcardOffset = indexOfAnyCharCode(absolute, wildcardCharCodes);
+    if (wildcardOffset < 0) {
+        // No "*" or "?" in the path
+        return !hasExtension(absolute)
+            ? absolute
+            : removeTrailingDirectorySeparator(getDirectoryPath(absolute));
+    }
+    return absolute.substring(0, absolute.lastIndexOf(directorySeparator, wildcardOffset));
+}
+
+/**
+ * Computes the unique non-wildcard base paths amongst the provided include patterns.
+ */
+function getBasePaths(path: string, includes: ReadonlyArray<string>, useCaseSensitiveFileNames: boolean) {
     // Storage for our results in the form of literal paths (e.g. the paths as written by the user).
     const basePaths: string[] = [path];
+
     if (includes) {
         // Storage for literal base paths amongst the include patterns.
         const includeBasePaths: string[] = [];
@@ -387,14 +565,8 @@ function getBasePaths(path: string, includes: string[], useCaseSensitiveFileName
             // We also need to check the relative paths by converting them to absolute and normalizing
             // in case they escape the base path (e.g "..\somedirectory")
             const absolute: string = isRootedDiskPath(include) ? include : normalizePath(combinePaths(path, include));
-
-            const wildcardOffset = indexOfAnyCharCode(absolute, wildcardCharCodes);
-            const includeBasePath = wildcardOffset < 0
-                ? removeTrailingDirectorySeparator(getDirectoryPath(absolute))
-                : absolute.substring(0, absolute.lastIndexOf(directorySeparator, wildcardOffset));
-
             // Append the literal and canonical candidate base paths.
-            includeBasePaths.push(includeBasePath);
+            includeBasePaths.push(getIncludeBasePath(absolute));
         }
 
         // Sort the offsets array using either the literal or canonical path representations.
@@ -402,15 +574,10 @@ function getBasePaths(path: string, includes: string[], useCaseSensitiveFileName
 
         // Iterate over each include base path and include unique base paths that are not a
         // subpath of an existing base path
-        include: for (let i = 0; i < includeBasePaths.length; i++) {
-            const includeBasePath = includeBasePaths[i];
-            for (let j = 0; j < basePaths.length; j++) {
-                if (containsPath(basePaths[j], includeBasePath, path, !useCaseSensitiveFileNames)) {
-                    continue include;
-                }
+        for (const includeBasePath of includeBasePaths) {
+            if (every(basePaths, basePath => !containsPath(basePath, includeBasePath, path, !useCaseSensitiveFileNames))) {
+                basePaths.push(includeBasePath);
             }
-
-            basePaths.push(includeBasePath);
         }
     }
 
@@ -439,122 +606,192 @@ function containsPath(parent: string, child: string, currentDirectory: string, i
     return true;
 }
 
-function getFileMatcherPatterns(path: string, _extensions: string[], excludes: string[], includes: string[], useCaseSensitiveFileNames: boolean, currentDirectory: string): FileMatcherPatterns {
+interface WildcardMatcher {
+    singleAsteriskRegexFragment: string;
+    doubleAsteriskRegexFragment: string;
+    replaceWildcardCharacter: (match: string) => string;
+}
+
+export const commonPackageFolders: ReadonlyArray<string> = ["node_modules", "bower_components", "jspm_packages"];
+
+const implicitExcludePathRegexPattern = `(?!(${commonPackageFolders.join("|")})(/|$))`;
+
+const filesMatcher: WildcardMatcher = {
+    /**
+     * Matches any single directory segment unless it is the last segment and a .min.js file
+     * Breakdown:
+     *  [^./]                   # matches everything up to the first . character (excluding directory seperators)
+     *  (\\.(?!min\\.js$))?     # matches . characters but not if they are part of the .min.js file extension
+     */
+    singleAsteriskRegexFragment: "([^./]|(\\.(?!min\\.js$))?)*",
+    /**
+     * Regex for the ** wildcard. Matches any number of subdirectories. When used for including
+     * files or directories, does not match subdirectories that start with a . character
+     */
+    doubleAsteriskRegexFragment: `(/${implicitExcludePathRegexPattern}[^/.][^/]*)*?`,
+    replaceWildcardCharacter: match => replaceWildcardCharacter(match, filesMatcher.singleAsteriskRegexFragment)
+};
+
+const directoriesMatcher: WildcardMatcher = {
+    singleAsteriskRegexFragment: "[^/]*",
+    /**
+     * Regex for the ** wildcard. Matches any number of subdirectories. When used for including
+     * files or directories, does not match subdirectories that start with a . character
+     */
+    doubleAsteriskRegexFragment: `(/${implicitExcludePathRegexPattern}[^/.][^/]*)*?`,
+    replaceWildcardCharacter: match => replaceWildcardCharacter(match, directoriesMatcher.singleAsteriskRegexFragment)
+};
+
+const excludeMatcher: WildcardMatcher = {
+    singleAsteriskRegexFragment: "[^/]*",
+    doubleAsteriskRegexFragment: "(/.+?)?",
+    replaceWildcardCharacter: match => replaceWildcardCharacter(match, excludeMatcher.singleAsteriskRegexFragment)
+};
+
+const wildcardMatchers = {
+    files: filesMatcher,
+    directories: directoriesMatcher,
+    exclude: excludeMatcher
+};
+
+function getRegularExpressionsForWildcards(specs: ReadonlyArray<string>, basePath: string, usage: "files" | "directories" | "exclude"): string[] | undefined {
+    if (specs === undefined || specs.length === 0) {
+        return undefined;
+    }
+
+    return flatMap(specs, spec =>
+        spec && getSubPatternFromSpec(spec, basePath, usage, wildcardMatchers[usage]));
+}
+
+/**
+ * An "includes" path "foo" is implicitly a glob "foo/** /*" (without the space) if its last component has no extension,
+ * and does not contain any glob characters itself.
+ */
+export function isImplicitGlob(lastPathComponent: string): boolean {
+    return !/[.*?]/.test(lastPathComponent);
+}
+
+function getSubPatternFromSpec(spec: string, basePath: string, usage: "files" | "directories" | "exclude", { singleAsteriskRegexFragment, doubleAsteriskRegexFragment, replaceWildcardCharacter }: WildcardMatcher): string | undefined {
+    let subpattern = "";
+    let hasRecursiveDirectoryWildcard = false;
+    let hasWrittenComponent = false;
+    const components = getNormalizedPathComponents(spec, basePath);
+    const lastComponent = lastOrUndefined(components);
+    if (usage !== "exclude" && lastComponent === "**") {
+        return undefined;
+    }
+
+    // getNormalizedPathComponents includes the separator for the root component.
+    // We need to remove to create our regex correctly.
+    components[0] = removeTrailingDirectorySeparator(components[0]);
+
+    if (isImplicitGlob(lastComponent)) {
+        components.push("**", "*");
+    }
+
+    let optionalCount = 0;
+    for (let component of components) {
+        if (component === "**") {
+            if (hasRecursiveDirectoryWildcard) {
+                return undefined;
+            }
+
+            subpattern += doubleAsteriskRegexFragment;
+            hasRecursiveDirectoryWildcard = true;
+        }
+        else {
+            if (usage === "directories") {
+                subpattern += "(";
+                optionalCount++;
+            }
+
+            if (hasWrittenComponent) {
+                subpattern += directorySeparator;
+            }
+
+            if (usage !== "exclude") {
+                let componentPattern = "";
+                // The * and ? wildcards should not match directories or files that start with . if they
+                // appear first in a component. Dotted directories and files can be included explicitly
+                // like so: **/.*/.*
+                if (component.charCodeAt(0) === CharacterCodes.asterisk) {
+                    componentPattern += "([^./]" + singleAsteriskRegexFragment + ")?";
+                    component = component.substr(1);
+                }
+                else if (component.charCodeAt(0) === CharacterCodes.question) {
+                    componentPattern += "[^./]";
+                    component = component.substr(1);
+                }
+
+                componentPattern += component.replace(reservedCharacterPattern, replaceWildcardCharacter);
+
+                // Patterns should not include subfolders like node_modules unless they are
+                // explicitly included as part of the path.
+                //
+                // As an optimization, if the component pattern is the same as the component,
+                // then there definitely were no wildcard characters and we do not need to
+                // add the exclusion pattern.
+                if (componentPattern !== component) {
+                    subpattern += implicitExcludePathRegexPattern;
+                }
+
+                subpattern += componentPattern;
+            }
+            else {
+                subpattern += component.replace(reservedCharacterPattern, replaceWildcardCharacter);
+            }
+        }
+
+        hasWrittenComponent = true;
+    }
+
+    while (optionalCount > 0) {
+        subpattern += ")?";
+        optionalCount--;
+    }
+
+    return subpattern;
+}
+
+export interface FileMatcherPatterns {
+    /** One pattern for each "include" spec. */
+    includeFilePatterns: ReadonlyArray<string>;
+    /** One pattern matching one of any of the "include" specs. */
+    includeFilePattern: string;
+    includeDirectoryPattern: string;
+    excludePattern: string;
+    basePaths: ReadonlyArray<string>;
+}
+
+
+export function getFileMatcherPatterns(path: string, excludes: ReadonlyArray<string>, includes: ReadonlyArray<string>, useCaseSensitiveFileNames: boolean, currentDirectory: string): FileMatcherPatterns {
     path = normalizePath(path);
     currentDirectory = normalizePath(currentDirectory);
     const absolutePath = combinePaths(currentDirectory, path);
 
     return {
-        includeFilePattern: getRegularExpressionForWildcard(includes, absolutePath, "files") || "",
-        includeDirectoryPattern: getRegularExpressionForWildcard(includes, absolutePath, "directories") || "",
-        excludePattern: getRegularExpressionForWildcard(excludes, absolutePath, "exclude") || "",
-        basePaths: getBasePaths(path, includes, useCaseSensitiveFileNames) || [],
+        includeFilePatterns: map(getRegularExpressionsForWildcards(includes, absolutePath, "files"), pattern => `^${pattern}$`),
+        includeFilePattern: getRegularExpressionForWildcard(includes, absolutePath, "files"),
+        includeDirectoryPattern: getRegularExpressionForWildcard(includes, absolutePath, "directories"),
+        excludePattern: getRegularExpressionForWildcard(excludes, absolutePath, "exclude"),
+        basePaths: getBasePaths(path, includes, useCaseSensitiveFileNames)
     };
-}
-
-function replaceWildCardCharacterFiles(match: string) {
-    return replaceWildcardCharacter(match, singleAsteriskRegexFragmentFiles);
-}
-
-function replaceWildCardCharacterOther(match: string) {
-    return replaceWildcardCharacter(match, singleAsteriskRegexFragmentOther);
 }
 
 function replaceWildcardCharacter(match: string, singleAsteriskRegexFragment: string) {
     return match === "*" ? singleAsteriskRegexFragment : match === "?" ? "[^/]" : "\\" + match;
 }
 
-function getRegularExpressionForWildcard(specs: string[], basePath: string, usage: "files" | "directories" | "exclude") {
-    if (specs === undefined || specs.length === 0) {
+export function getRegularExpressionForWildcard(specs: ReadonlyArray<string>, basePath: string, usage: "files" | "directories" | "exclude"): string | undefined {
+    const patterns = getRegularExpressionsForWildcards(specs, basePath, usage);
+    if (!patterns || !patterns.length) {
         return undefined;
     }
 
-    const replaceWildcardCharacter = usage === "files" ? replaceWildCardCharacterFiles : replaceWildCardCharacterOther;
-    const singleAsteriskRegexFragment = usage === "files" ? singleAsteriskRegexFragmentFiles : singleAsteriskRegexFragmentOther;
-
-    /**
-     * Regex for the ** wildcard. Matches any number of subdirectories. When used for including
-     * files or directories, does not match subdirectories that start with a . character
-     */
-    const doubleAsteriskRegexFragment = usage === "exclude" ? "(/.+?)?" : "(/[^/.][^/]*)*?";
-
-    let pattern = "";
-    let hasWrittenSubpattern = false;
-    spec: for (const spec of specs) {
-        if (!spec) {
-            continue;
-        }
-
-        let subpattern = "";
-        let hasRecursiveDirectoryWildcard = false;
-        let hasWrittenComponent = false;
-        const components = getNormalizedPathComponents(spec, basePath);
-        if (usage !== "exclude" && components[components.length - 1] === "**") {
-            continue spec;
-        }
-
-        // getNormalizedPathComponents includes the separator for the root component.
-        // We need to remove to create our regex correctly.
-        components[0] = removeTrailingDirectorySeparator(components[0]);
-
-        let optionalCount = 0;
-        for (let component of components) {
-            if (component === "**") {
-                if (hasRecursiveDirectoryWildcard) {
-                    continue spec;
-                }
-
-                subpattern += doubleAsteriskRegexFragment;
-                hasRecursiveDirectoryWildcard = true;
-                hasWrittenComponent = true;
-            }
-            else {
-                if (usage === "directories") {
-                    subpattern += "(";
-                    optionalCount++;
-                }
-
-                if (hasWrittenComponent) {
-                    subpattern += directorySeparator;
-                }
-
-                if (usage !== "exclude") {
-                    // The * and ? wildcards should not match directories or files that start with . if they
-                    // appear first in a component. Dotted directories and files can be included explicitly
-                    // like so: **/.*/.*
-                    if (component.charCodeAt(0) === CharacterCodes.asterisk) {
-                        subpattern += "([^./]" + singleAsteriskRegexFragment + ")?";
-                        component = component.substr(1);
-                    }
-                    else if (component.charCodeAt(0) === CharacterCodes.question) {
-                        subpattern += "[^./]";
-                        component = component.substr(1);
-                    }
-                }
-
-                subpattern += component.replace(reservedCharacterPattern, replaceWildcardCharacter);
-                hasWrittenComponent = true;
-            }
-        }
-
-        while (optionalCount > 0) {
-            subpattern += ")?";
-            optionalCount--;
-        }
-
-        if (hasWrittenSubpattern) {
-            pattern += "|";
-        }
-
-        pattern += "(" + subpattern + ")";
-        hasWrittenSubpattern = true;
-    }
-
-    if (!pattern) {
-        return undefined;
-    }
-
-    return "^(" + pattern + (usage === "exclude" ? ")($|/)" : ")$");
+    const pattern = patterns.map(pattern => `(${pattern})`).join("|");
+    // If excluding, match "foo/bar/baz...", but if including, only allow "foo".
+    const terminator = usage === "exclude" ? "($|/)" : "$";
+    return `^(${pattern})${terminator}`;
 }
 
 function getNormalizedPathComponents(path: string, currentDirectory: string) {
@@ -581,16 +818,6 @@ function endsWith(str: string, suffix: string): boolean {
 
 function fileExtensionIs(path: string, extension: string): boolean {
     return path.length > extension.length && endsWith(path, extension);
-}
-
-function fileExtensionIsAny(path: string, extensions: string[]): boolean {
-    for (const extension of extensions) {
-        if (fileExtensionIs(path, extension)) {
-            return true;
-        }
-    }
-
-    return false;
 }
 
 const solidityPattern = /\.sol$/;
@@ -651,6 +878,16 @@ export function hasExtension(fileName: string): boolean {
     return getBaseFileName(fileName).indexOf(".") >= 0;
 }
 
+export function fileExtensionIsOneOf(path: string, extensions: ReadonlyArray<string>): boolean {
+    for (const extension of extensions) {
+        if (fileExtensionIs(path, extension)) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
 const extensionsToRemove = [Extension.Sol];
 export function removeFileExtension(path: string): string {
     for (const ext of extensionsToRemove) {
@@ -679,7 +916,103 @@ export function hasSolidityFileExtension(fileName: string) {
     return forEach(supportedSolidityExtensions, extension => fileExtensionIs(fileName, extension));
 }
 
+/**
+ * Tests whether a value is an array.
+ */
+export function isArray(value: any): value is ReadonlyArray<any> {
+    return Array.isArray ? Array.isArray(value) : value instanceof Array;
+}
+
+/**
+ * Tests whether a value is string
+ */
+export function isString(text: any): text is string {
+    return typeof text === "string";
+}
+
+export function map<T, U>(array: ReadonlyArray<T>, f: (x: T, i: number) => U): U[] {
+    let result: U[];
+    if (array) {
+        result = [];
+        for (let i = 0; i < array.length; i++) {
+            result.push(f(array[i], i));
+        }
+    }
+    return result;
+}
+
+/**
+ * Maps an array. If the mapped value is an array, it is spread into the result.
+ *
+ * @param array The array to map.
+ * @param mapfn The callback used to map the result into one or more values.
+ */
+export function flatMap<T, U>(array: ReadonlyArray<T> | undefined, mapfn: (x: T, i: number) => U | ReadonlyArray<U> | undefined): U[] | undefined {
+    let result: U[];
+    if (array) {
+        result = [];
+        for (let i = 0; i < array.length; i++) {
+            const v = mapfn(array[i], i);
+            if (v) {
+                if (isArray(v)) {
+                    addRange(result, v);
+                }
+                else {
+                    result.push(v);
+                }
+            }
+        }
+    }
+    return result;
+}
+
+/**
+ * Filters an array by a predicate function. Returns the same array instance if the predicate is
+ * true for all elements, otherwise returns a new array instance containing the filtered subset.
+ */
+export function filter<T, U extends T>(array: T[], f: (x: T) => x is U): U[];
+export function filter<T>(array: T[], f: (x: T) => boolean): T[];
+export function filter<T, U extends T>(array: ReadonlyArray<T>, f: (x: T) => x is U): ReadonlyArray<U>;
+export function filter<T, U extends T>(array: ReadonlyArray<T>, f: (x: T) => boolean): ReadonlyArray<T>;
+export function filter<T>(array: T[], f: (x: T) => boolean): T[] {
+    if (array) {
+        const len = array.length;
+        let i = 0;
+        while (i < len && f(array[i])) i++;
+        if (i < len) {
+            const result = array.slice(0, i);
+            i++;
+            while (i < len) {
+                const item = array[i];
+                if (f(item)) {
+                    result.push(item);
+                }
+                i++;
+            }
+            return result;
+        }
+    }
+    return array;
+}
+
+/** Shims `Array.from`. */
+export function arrayFrom<T, U>(iterator: Iterator<T>, map: (t: T) => U): U[];
+export function arrayFrom<T>(iterator: Iterator<T>): T[];
+export function arrayFrom(iterator: Iterator<any>, map?: (t: any) => any): any[] {
+    const result: any[] = [];
+    for (let { value, done } = iterator.next(); !done; { value, done } = iterator.next()) {
+        result.push(map ? map(value) : value);
+    }
+    return result;
+}
+
 export function noop(): void { }
+
+/** Do nothing and return false */
+export function returnFalse(): false { return false; }
+
+/** Do nothing and return true */
+export function returnTrue(): true { return true; }
 
 export const enum AssertionLevel {
     None = 0,
