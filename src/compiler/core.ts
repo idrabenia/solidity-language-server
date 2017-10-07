@@ -1,3 +1,5 @@
+import { Diagnostic } from "vscode-languageserver";
+
 import { CharacterCodes, Extension, Map, Path } from "./types";
 
 const enum Comparison {
@@ -439,6 +441,13 @@ export function removeTrailingDirectorySeparator(path: string) {
     }
 
     return path;
+}
+
+export function compareValues<T>(a: T, b: T): Comparison {
+    if (a === b) return Comparison.EqualTo;
+    if (a === undefined) return Comparison.LessThan;
+    if (b === undefined) return Comparison.GreaterThan;
+    return a < b ? Comparison.LessThan : Comparison.GreaterThan;
 }
 
 function compareStrings(a: string, b: string, ignoreCase?: boolean): Comparison {
@@ -1023,4 +1032,37 @@ export function createGetCanonicalFileName(useCaseSensitiveFileNames: boolean): 
     return useCaseSensitiveFileNames
         ? ((fileName) => fileName)
         : ((fileName) => fileName.toLowerCase());
+}
+
+export function sortAndDeduplicateDiagnostics(diagnostics: Diagnostic[]): Diagnostic[] {
+    return deduplicateSortedDiagnostics(diagnostics.sort(compareDiagnostics));
+}
+
+export function deduplicateSortedDiagnostics(diagnostics: Diagnostic[]): Diagnostic[] {
+    if (diagnostics.length < 2) {
+        return diagnostics;
+    }
+
+    const newDiagnostics = [diagnostics[0]];
+    let previousDiagnostic = diagnostics[0];
+    for (let i = 1; i < diagnostics.length; i++) {
+        const currentDiagnostic = diagnostics[i];
+        const isDupe = compareDiagnostics(currentDiagnostic, previousDiagnostic) === Comparison.EqualTo;
+        if (!isDupe) {
+            newDiagnostics.push(currentDiagnostic);
+            previousDiagnostic = currentDiagnostic;
+        }
+    }
+
+    return newDiagnostics;
+}
+
+export function compareDiagnostics(d1: Diagnostic, d2: Diagnostic): Comparison {
+    return compareValues(d1.range.start, d2.range.start) ||
+        compareValues(d1.range.end, d2.range.end) ||
+        compareValues(d1.severity, d2.severity) ||
+        compareValues(d1.code, d2.code) ||
+        compareValues(d1.source, d2.source) ||
+        compareStrings(d1.message, d2.message) ||
+        Comparison.EqualTo;
 }

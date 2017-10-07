@@ -1,7 +1,7 @@
 import { Diagnostic, DiagnosticSeverity, Range } from "vscode-languageserver";
 
 import * as core from "./core";
-import { arrayFrom, getDirectoryPath, getRootLength, memoize, returnFalse } from "./core";
+import { arrayFrom, flatMap, getDirectoryPath, getRootLength, memoize, returnFalse, sortAndDeduplicateDiagnostics } from "./core";
 import { Debug, createMap, forEach, getNormalizedAbsolutePath, normalizePath } from "./core";
 import { solcErrToDiagnostic, soliumErrObjectToDiagnostic } from "./diagnostics";
 import { createModuleResolutionCache, resolveModuleName } from "./moduleNameResolver";
@@ -230,7 +230,26 @@ export function createProgram(rootNames: ReadonlyArray<string>, options: Compile
         }
     }
 
+    function getDiagnosticsHelper(
+        sourceFile: SourceFile,
+        getDiagnostics: (sourceFile: SourceFile) => ReadonlyArray<Diagnostic>): ReadonlyArray<Diagnostic> {
+        if (sourceFile) {
+            return getDiagnostics(sourceFile);
+        }
+        return sortAndDeduplicateDiagnostics(flatMap(program.getSourceFiles(), sourceFile => {
+            return getDiagnostics(sourceFile);
+        }));
+    }
+
     function getCompilerDiagnostics(sourceFile: SourceFile): ReadonlyArray<Diagnostic> {
+        return getDiagnosticsHelper(sourceFile, getCompilerDiagnosticsForFile);
+    }
+
+    function getLinterDiagnostics(sourceFile: SourceFile): ReadonlyArray<Diagnostic> {
+        return getDiagnosticsHelper(sourceFile, getLinterDiagnosticsForFile);
+    }
+
+    function getCompilerDiagnosticsForFile(sourceFile: SourceFile): ReadonlyArray<Diagnostic> {
         const input = { [sourceFile.fileName]: sourceFile.text };
         collectSources(sourceFile);
 
@@ -256,7 +275,7 @@ export function createProgram(rootNames: ReadonlyArray<string>, options: Compile
         }
     }
 
-    function getLinterDiagnostics(sourceFile: SourceFile): ReadonlyArray<Diagnostic> {
+    function getLinterDiagnosticsForFile(sourceFile: SourceFile): ReadonlyArray<Diagnostic> {
         try {
             const errorObjects = Solium.lint(sourceFile.text, { rules: soliumDefaultRules });
             return errorObjects.map(soliumErrObjectToDiagnostic);

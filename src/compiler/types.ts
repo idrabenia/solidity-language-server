@@ -84,8 +84,8 @@ export interface Program extends ScriptReferenceHost {
     /* @internal */
     getMissingFilePaths(): ReadonlyArray<Path>;
 
-    getCompilerDiagnostics(sourceFile: SourceFile): ReadonlyArray<Diagnostic>;
-    getLinterDiagnostics(sourceFile: SourceFile): ReadonlyArray<Diagnostic>;
+    getCompilerDiagnostics(sourceFile?: SourceFile): ReadonlyArray<Diagnostic>;
+    getLinterDiagnostics(sourceFile?: SourceFile): ReadonlyArray<Diagnostic>;
 
     /* @internal */ getFileProcessingDiagnostics(): Diagnostic[];
 
