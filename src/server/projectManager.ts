@@ -2,7 +2,7 @@ import { Observable } from "@reactivex/rxjs";
 import * as glob from "glob";
 import iterate from "iterare";
 
-import { isPackageJsonFile, isSolidityFile, noop } from "../compiler/core";
+import { flatMap, isPackageJsonFile, isSolidityFile, noop } from "../compiler/core";
 import { resolveModuleName } from "../compiler/moduleNameResolver";
 import { CompilerOptions, Program } from "../compiler/types";
 import { preProcessFile } from "../services/preProcess";
@@ -95,11 +95,11 @@ export class ProjectManager {
         this.versions = new Map<string, number>();
 
         const trimmedRootPath = this.rootPath.replace(/\/+$/, "");
-        const solidityConfig: any = {
+        const solidityConfig: SolidityConfig = {
             compilerOptions: {
                 optimize: true
             },
-            include: "**/*.sol"
+            include: ["**/*.sol"]
         };
         const config = new ProjectConfiguration(
             this.inMemoryFs,
@@ -521,6 +521,11 @@ export class InMemoryLanguageServiceHost implements LanguageServiceHost {
     }
 }
 
+interface SolidityConfig {
+    compilerOptions: CompilerOptions;
+    include: string[];
+}
+
 /**
  * ProjectConfiguration instances track the compiler configuration
  * and state for a single Solidity project. It represents the world of
@@ -551,7 +556,7 @@ export class ProjectConfiguration {
     /**
      * Configuration JSON object. May be used when there is no real configuration file to parse and use
      */
-    private configContent: any;
+    private configContent: SolidityConfig;
 
     /**
      * Relative source file path (relative) -> version associations
@@ -582,7 +587,7 @@ export class ProjectConfiguration {
         fs: InMemoryFileSystem,
         rootFilePath: string,
         versions: Map<string, number>,
-        configContent?: any,
+        configContent?: SolidityConfig,
         private logger: Logger = new NoopLogger()
     ) {
         this.fs = fs;
@@ -596,7 +601,7 @@ export class ProjectConfiguration {
             return;
         }
         const configObject = this.configContent;
-        this.expectedFilePaths = new Set(glob.sync(configObject.include));
+        this.expectedFilePaths = new Set(flatMap(configObject.include, pattern => glob.sync(pattern)));
 
         this.host = new InMemoryLanguageServiceHost(
             this.fs.path,
