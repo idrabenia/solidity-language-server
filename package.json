@@ -3,6 +3,7 @@
   "description": "A language server for Solidity language",
   "displayName": "solidity-language-server",
   "version": "0.1.0",
+  "license": "Apache-2.0",
   "publisher": "Kodebox",
   "engines": {
     "vscode": "^1.16.0"
@@ -45,7 +46,6 @@
   },
   "repository": "git@github.com:kodebox-io/solidity-language-server.git",
   "author": "Kwang Yul Seo <kseo@kodebox.io>",
-  "license": "MIT",
   "scripts": {
     "vscode:prepublish": "npm run compile",
     "compile": "tsc -p ./",
