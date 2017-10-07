@@ -232,12 +232,12 @@ export function createProgram(rootNames: ReadonlyArray<string>, options: Compile
 
     function getDiagnosticsHelper(
         sourceFile: SourceFile,
-        getDiagnostics: (sourceFile: SourceFile) => ReadonlyArray<Diagnostic>): ReadonlyArray<Diagnostic> {
+        getDiagnostics: (sourceFile: SourceFile) => ReadonlyArray<Diagnostic>, ...rest: any[]): ReadonlyArray<Diagnostic> {
         if (sourceFile) {
-            return getDiagnostics(sourceFile);
+            return getDiagnostics(sourceFile, ...rest);
         }
         return sortAndDeduplicateDiagnostics(flatMap(program.getSourceFiles(), sourceFile => {
-            return getDiagnostics(sourceFile);
+            return getDiagnostics(sourceFile, ...rest);
         }));
     }
 
@@ -245,8 +245,8 @@ export function createProgram(rootNames: ReadonlyArray<string>, options: Compile
         return getDiagnosticsHelper(sourceFile, getCompilerDiagnosticsForFile);
     }
 
-    function getLinterDiagnostics(sourceFile: SourceFile): ReadonlyArray<Diagnostic> {
-        return getDiagnosticsHelper(sourceFile, getLinterDiagnosticsForFile);
+    function getLinterDiagnostics(sourceFile: SourceFile, soliumRules: any): ReadonlyArray<Diagnostic> {
+        return getDiagnosticsHelper(sourceFile, getLinterDiagnosticsForFile, soliumRules);
     }
 
     function getCompilerDiagnosticsForFile(sourceFile: SourceFile): ReadonlyArray<Diagnostic> {

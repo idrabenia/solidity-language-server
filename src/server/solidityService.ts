@@ -236,7 +236,7 @@ export class SolidityService {
             return;
         }
         const fileName = uri2path(uri);
-        const diagnostics = config.getService().getCompilerDiagnostics(fileName).concat(config.getService().getLinterDiagnostics(fileName));
+        const diagnostics = config.getService().getCompilerDiagnostics(fileName).concat(config.getService().getLinterDiagnostics(fileName, this.settings.soliumRules));
         this.client.textDocumentPublishDiagnostics({ uri, diagnostics });
     }
 

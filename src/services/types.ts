@@ -13,7 +13,7 @@ import { CompilerOptions, HasInvalidatedResolution, Program } from "../compiler/
 export interface LanguageService {
     getCompletionsAtPosition(fileName: string, position: Position): CompletionItem[];
     getCompilerDiagnostics(fileName: string): Diagnostic[];
-    getLinterDiagnostics(fileName: string): Diagnostic[];
+    getLinterDiagnostics(fileName: string, soliumRules?: any): Diagnostic[];
 
     getProgram(): Program;
 }
