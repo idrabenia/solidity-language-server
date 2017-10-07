@@ -1,4 +1,3 @@
-import * as _ from "lodash";
 import {
     CompletionItem,
     CompletionItemKind,
@@ -143,7 +142,7 @@ function getUnitCompletions(): CompletionItem[] {
         return item;
     });
 
-    return _.concat(etherUnitCompletions, timeUnitCompletions);
+    return etherUnitCompletions.concat(timeUnitCompletions);
 }
 
 export function getCompletionsAtPosition(host: LanguageServiceHost, fileName: string, position: Position): CompletionItem[] {
@@ -198,12 +197,15 @@ function getAllCompletions(text: string): CompletionItem[] {
         }
     }
 
-    return _.concat(
-        completionItems,
-        getGlobalFunctionCompletions(),
-        getGlobalVariableCompletions(),
-        getTypeCompletions(),
-        getUnitCompletions());
+    const completions = [
+        ...completionItems,
+        ...getGlobalFunctionCompletions(),
+        ...getGlobalVariableCompletions(),
+        ...getTypeCompletions(),
+        ...getUnitCompletions()
+    ];
+
+    return completions;
 }
 
 function isCompletionTriggeredByDot(line: string, character: number): { triggeredByDot: boolean, wordEndCharacter: number } {
