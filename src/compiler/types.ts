@@ -517,3 +517,12 @@ export interface PackageId {
     /** Version of the package, e.g. "1.2.3" */
     version: string;
 }
+
+export interface TextRange {
+    pos: number;
+    end: number;
+}
+
+export interface FileReference extends TextRange {
+    fileName: string;
+}

@@ -4,7 +4,7 @@ import {
 } from "vscode-languageserver";
 import { Diagnostic } from "vscode-languageserver";
 
-import { CompilerOptions, HasInvalidatedResolution, Program } from "../compiler/types";
+import { CompilerOptions, FileReference, HasInvalidatedResolution, Program } from "../compiler/types";
 
 //
 // Public services of a language service instance associated
@@ -45,4 +45,8 @@ export interface LanguageServiceHost {
      * completions will not be provided
      */
     getDirectories?(directoryName: string): string[];
+}
+
+export interface PreProcessedFileInfo {
+    importedFiles: FileReference[];
 }
