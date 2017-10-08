@@ -50,6 +50,9 @@ export function createProgram(rootNames: ReadonlyArray<string>, options: Compile
 
     const filesByName = createMap<SourceFile | undefined>();
     let missingFilePaths: ReadonlyArray<Path>;
+    // stores 'filename -> file association' ignoring case
+    // used to track cases when two file names differ only in casing
+    const filesByNameIgnoreCase = host.useCaseSensitiveFileNames() ? createMap<SourceFile>() : undefined;
 
     forEach(rootNames, name => processRootFile(name));
     missingFilePaths = arrayFrom(filesByName.keys(), p => <Path>p).filter(p => !filesByName.get(p));
@@ -154,7 +157,7 @@ export function createProgram(rootNames: ReadonlyArray<string>, options: Compile
     }
 
     // Get source file from normalized fileName
-    function findSourceFile(fileName: string, path: Path, _refFile: SourceFile, refRange: Range, packageId: PackageId | undefined): SourceFile | undefined {
+    function findSourceFile(fileName: string, path: Path, refFile: SourceFile, refRange: Range, packageId: PackageId | undefined): SourceFile | undefined {
         if (filesByName.has(path)) {
             return filesByName.get(path);
         }
@@ -192,12 +195,32 @@ export function createProgram(rootNames: ReadonlyArray<string>, options: Compile
         if (file) {
             file.path = path;
 
+            if (host.useCaseSensitiveFileNames()) {
+                const pathLowerCase = path.toLowerCase();
+                // for case-sensitive file systems check if we've already seen some file with similar filename ignoring case
+                const existingFile = filesByNameIgnoreCase.get(pathLowerCase);
+                if (existingFile) {
+                    reportFileNamesDifferOnlyInCasingError(fileName, existingFile.fileName, refFile, refRange);
+                }
+                else {
+                    filesByNameIgnoreCase.set(pathLowerCase, file);
+                }
+            }
+
             // always process imported modules to record module name resolutions
             processImportedModules(file);
             files.push(file);
         }
 
         return file;
+    }
+
+    function reportFileNamesDifferOnlyInCasingError(fileName: string, existingFileName: string, _refFile: SourceFile, refRange: Range): void {
+        fileProcessingDiagnostics.push({
+            message: `File name ${fileName} differs from already included file name ${existingFileName} only in casing`,
+            severity: DiagnosticSeverity.Error,
+            range: refRange
+        });
     }
 
     function getCanonicalFileName(fileName: string): string {
