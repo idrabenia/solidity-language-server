@@ -124,6 +124,44 @@ export function lastOrUndefined<T>(array: ReadonlyArray<T>): T | undefined {
     return elementAt(array, -1);
 }
 
+export type Comparer<T> = (a: T, b: T) => Comparison;
+
+/**
+ * Performs a binary search, finding the index at which 'value' occurs in 'array'.
+ * If no such index is found, returns the 2's-complement of first index at which
+ * number[index] exceeds number.
+ * @param array A sorted array whose first element must be no larger than number
+ * @param number The value to be searched for in the array.
+ */
+export function binarySearch<T>(array: ReadonlyArray<T>, value: T, comparer?: Comparer<T>, offset?: number): number {
+    if (!array || array.length === 0) {
+        return -1;
+    }
+
+    let low = offset || 0;
+    let high = array.length - 1;
+    comparer = comparer !== undefined
+        ? comparer
+        : (v1, v2) => (v1 < v2 ? -1 : (v1 > v2 ? 1 : 0));
+
+    while (low <= high) {
+        const middle = low + ((high - low) >> 1);
+        const midValue = array[middle];
+
+        if (comparer(midValue, value) === 0) {
+            return middle;
+        }
+        else if (comparer(midValue, value) > 0) {
+            high = middle - 1;
+        }
+        else {
+            low = middle + 1;
+        }
+    }
+
+    return ~low;
+}
+
 /**
  * Iterates through `array` by index and performs the callback on each element of array until the callback
  * returns a falsey value, then returns false.
@@ -769,11 +807,35 @@ export function isPackageJsonFile(filename: string): boolean {
 // The global Map object. This may not be available, so we must test for it.
 declare const Map: { new <T>(): Map<T> } | undefined;
 
+/**
+ * Type of objects whose values are all of the same type.
+ * The `in` and `for-in` operators can *not* be safely used,
+ * since `Object.prototype` may be modified by outside code.
+ */
+export interface MapLike<T> {
+    [index: string]: T;
+}
+
 /** Create a new map. If a template object is provided, the map will copy entries from it. */
 export function createMap<T>(): Map<T> {
     return new Map<T>();
 }
 
+const hasOwnProperty = Object.prototype.hasOwnProperty;
+
+export function createMapFromTemplate<T>(template?: MapLike<T>): Map<T> {
+    const map: Map<T> = new Map<T>();
+
+    // Copies keys/values from template. Note that for..in will not throw if
+    // template is undefined, and instead will just exit the loop.
+    for (const key in template) {
+        if (hasOwnProperty.call(template, key)) {
+            map.set(key, template[key]);
+        }
+    }
+
+    return map;
+}
 
 /**
  * Iterates through 'array' by index and performs the callback on each element of array until the callback

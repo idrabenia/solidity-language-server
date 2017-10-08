@@ -4,6 +4,206 @@ import { Diagnostic } from "vscode-languageserver";
 // arbitrary file name can be converted to Path via toPath function
 export type Path = string & { __pathBrand: any };
 
+export interface LineAndCharacter {
+    line: number;
+    /*
+     * This value denotes the character position in line and is different from the 'column' because of tab characters.
+     */
+    character: number;
+}
+
+// token > SyntaxKind.Identifer => token is a keyword
+// Also, If you add a new SyntaxKind be sure to keep the `Markers` section at the bottom in sync
+export const enum SyntaxKind {
+    Unknown,
+    EndOfFileToken,
+    SingleLineCommentTrivia,
+    MultiLineCommentTrivia,
+    NewLineTrivia,
+    WhitespaceTrivia,
+    // We detect and preserve #! on the first line
+    ShebangTrivia,
+    // We detect and provide better error recovery when we encounter a git merge marker.  This
+    // allows us to edit files with git-conflict markers in them in a much more pleasant manner.
+    ConflictMarkerTrivia,
+    // Literals
+    NumericLiteral,
+    StringLiteral,
+    // Punctuation
+    OpenBraceToken,
+    CloseBraceToken,
+    OpenParenToken,
+    CloseParenToken,
+    OpenBracketToken,
+    CloseBracketToken,
+    DotToken,
+    DotDotDotToken,
+    SemicolonToken,
+    CommaToken,
+    LessThanToken,
+    LessThanSlashToken,
+    GreaterThanToken,
+    LessThanEqualsToken,
+    GreaterThanEqualsToken,
+    EqualsEqualsToken,
+    ExclamationEqualsToken,
+    EqualsGreaterThanToken,
+    PlusToken,
+    MinusToken,
+    AsteriskToken,
+    AsteriskAsteriskToken,
+    SlashToken,
+    PercentToken,
+    PlusPlusToken,
+    MinusMinusToken,
+    LessThanLessThanToken,
+    GreaterThanGreaterThanToken,
+    GreaterThanGreaterThanGreaterThanToken,
+    AmpersandToken,
+    BarToken,
+    CaretToken,
+    ExclamationToken,
+    TildeToken,
+    AmpersandAmpersandToken,
+    BarBarToken,
+    QuestionToken,
+    ColonToken,
+    AtToken,
+    // Assignments
+    EqualsToken,
+    PlusEqualsToken,
+    MinusEqualsToken,
+    AsteriskEqualsToken,
+    SlashEqualsToken,
+    PercentEqualsToken,
+    LessThanLessThanEqualsToken,
+    GreaterThanGreaterThanEqualsToken,
+    GreaterThanGreaterThanGreaterThanEqualsToken,
+    AmpersandEqualsToken,
+    BarEqualsToken,
+    CaretEqualsToken,
+    // Identifiers
+    Identifier,
+    // Keywords
+    AnonymousKeyword,
+    AsKeyword,
+    AssemblyKeyword,
+    BreakKeyword,
+    ConstantKeyword,
+    ContinueKeyword,
+    ContractKeyword,
+    DeleteKeyword,
+    DoKeyword,
+    ElseKeyword,
+    EnumKeyword,
+    EventKeyword,
+    ExternalKeyword,
+    FalseKeyword,
+    ForKeyword,
+    FunctionKeyword,
+    HexKeyword,
+    IfKeyword,
+    ImportKeyword,
+    IndexedKeyword,
+    InterfaceKeyword,
+    InternalKeyword,
+    IsKeyword,
+    LibraryKeyword,
+    MappingKeyword,
+    MemoryKeyword,
+    ModifierKeyword,
+    NewKeyword,
+    PayableKeyword,
+    PragmaKeyword,
+    PrivateKeyword,
+    PublicKeyword,
+    PureKeyword,
+    ReturnKeyword,
+    ReturnsKeyword,
+    StorageKeyword,
+    StructKeyword,
+    ThisKeyword,
+    ThrowKeyword,
+    TrueKeyword,
+    UsingKeyword,
+    VarKeyword,
+    WhileKeyword,
+    // Types
+    IntKeyword,
+    UintKeyword,
+    BytesKeyword,
+    ByteKeyword,
+    StringKeyword,
+    AddressKeyword,
+    BoolKeyword,
+    FixedKeyword,
+    UfixedKeyword,
+    // Denomination
+    EtherKeyword,
+    FinneyKeyword,
+    SzaboKeyword,
+    WeiKeyword,
+    // Time
+    DaysKeyword,
+    HoursKeyword,
+    MinutesKeyword,
+    SecondsKeyword,
+    WeeksKeyword,
+    YearsKeyword,
+    // Future reserverd word
+    AbstractKeyword,
+    AfterKeyword,
+    CaseKeyword,
+    CatchKeyword,
+    DefaultKeyword,
+    FinalKeyword,
+    InKeyword,
+    InlineKeyword,
+    LetKeyword,
+    MatchKeyword,
+    NullKeyword,
+    OfKeyword,
+    RelocatableKeyword,
+    StaticKeyword,
+    SwitchKeyword,
+    TryKeyword,
+    TypeKeyword,
+    TypeofKeyword, // LastKeyword and LastToken
+
+    // Markers
+    FirstAssignment = EqualsToken,
+    LastAssignment = CaretEqualsToken,
+    FirstCompoundAssignment = PlusEqualsToken,
+    LastCompoundAssignment = CaretEqualsToken,
+    FirstReservedWord = AnonymousKeyword,
+    LastReservedWord = TypeofKeyword,
+    FirstKeyword = AnonymousKeyword,
+    LastKeyword = TypeofKeyword,
+    FirstFutureReservedWord = AbstractKeyword,
+    LastFutureReservedWord = TypeofKeyword,
+    FirstPunctuation = OpenBraceToken,
+    LastPunctuation = CaretEqualsToken,
+    FirstToken = Unknown,
+    LastToken = LastKeyword,
+    FirstTriviaToken = SingleLineCommentTrivia,
+    LastTriviaToken = ConflictMarkerTrivia,
+    FirstLiteralToken = NumericLiteral,
+    LastLiteralToken = StringLiteral,
+    FirstBinaryOperator = LessThanToken,
+    LastBinaryOperator = CaretEqualsToken,
+}
+
+/* @internal */
+export const enum NumericLiteralFlags {
+    None = 0,
+    Scientific = 1 << 1,        // e.g. `10e2`
+    Octal = 1 << 2,             // e.g. `0777`
+    HexSpecifier = 1 << 3,      // e.g. `0x00000000`
+    BinarySpecifier = 1 << 4,   // e.g. `0b0110010000000000`
+    OctalSpecifier = 1 << 5,    // e.g. `0o777`
+    BinaryOrOctalSpecifier = BinarySpecifier | OctalSpecifier,
+}
+
 export const enum Extension {
     Sol = ".sol"
 }
@@ -37,6 +237,15 @@ export interface RedirectInfo {
     readonly unredirected: SourceFile;
 }
 
+/* @internal */
+/**
+ * Subset of properties from SourceFile that are used in multiple utility functions
+ */
+export interface SourceFileLike {
+    readonly text: string;
+    lineMap: ReadonlyArray<number>;
+}
+
 export interface SourceFile {
     fileName: string;
     /* @internal */ path: Path;
@@ -49,6 +258,9 @@ export interface SourceFile {
      */
     /* @internal */ redirectInfo?: RedirectInfo | undefined;
 
+    // Stores a line map for the file.
+    // This field should never be used directly to obtain line map, use getLineMap function instead.
+    /* @internal */ lineMap: ReadonlyArray<number>;
     /* @internal */ resolvedModules: Map<ResolvedModuleFull>;
     /* @internal */ imports: ReadonlyArray<string>;
     /* @internal */ version: string;
