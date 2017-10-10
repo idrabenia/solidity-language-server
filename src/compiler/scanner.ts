@@ -20,7 +20,6 @@ export interface Scanner {
     getTokenPos(): number;
     getTokenText(): string;
     getTokenValue(): string;
-    hasExtendedUnicodeEscape(): boolean;
     hasPrecedingLineBreak(): boolean;
     isIdentifier(): boolean;
     isReservedWord(): boolean;
@@ -432,7 +431,6 @@ export function createScanner(skipTrivia: boolean,
         getTokenPos: () => tokenPos,
         getTokenText: () => text.substring(tokenPos, pos),
         getTokenValue: () => tokenValue,
-        hasExtendedUnicodeEscape: () => hasExtendedUnicodeEscape,
         hasPrecedingLineBreak: () => precedingLineBreak,
         isIdentifier: () => token === SyntaxKind.Identifier || token > SyntaxKind.LastReservedWord,
         isReservedWord: () => token >= SyntaxKind.FirstReservedWord && token <= SyntaxKind.LastReservedWord,
@@ -589,13 +587,6 @@ export function createScanner(skipTrivia: boolean,
             case CharacterCodes.doubleQuote:
                 return "\"";
             case CharacterCodes.u:
-                // '\u{DDDDDDDD}'
-                if (pos < end && text.charCodeAt(pos) === CharacterCodes.openBrace) {
-                    hasExtendedUnicodeEscape = true;
-                    pos++;
-                    return scanExtendedUnicodeEscape();
-                }
-
                 // '\uDDDD'
                 return scanHexadecimalEscape(/*numDigits*/ 4);
 
@@ -629,54 +620,6 @@ export function createScanner(skipTrivia: boolean,
             error("Hexadecimal digit expected");
             return "";
         }
-    }
-
-    function scanExtendedUnicodeEscape(): string {
-        const escapedValue = scanMinimumNumberOfHexDigits(1);
-        let isInvalidExtendedEscape = false;
-
-        // Validate the value of the digit
-        if (escapedValue < 0) {
-            error("Hexadecimal digit expected");
-            isInvalidExtendedEscape = true;
-        }
-        else if (escapedValue > 0x10FFFF) {
-            error("An extended Unicode escape value must be between 0x0 and 0x10FFFF inclusive");
-            isInvalidExtendedEscape = true;
-        }
-
-        if (pos >= end) {
-            error("Unexpected end of text");
-            isInvalidExtendedEscape = true;
-        }
-        else if (text.charCodeAt(pos) === CharacterCodes.closeBrace) {
-            // Only swallow the following character up if it's a '}'.
-            pos++;
-        }
-        else {
-            error("Unterminated Unicode escape sequence");
-            isInvalidExtendedEscape = true;
-        }
-
-        if (isInvalidExtendedEscape) {
-            return "";
-        }
-
-        return utf16EncodeAsString(escapedValue);
-    }
-
-    // Derived from the 10.1.1 UTF16Encoding of the ES6 Spec.
-    function utf16EncodeAsString(codePoint: number): string {
-        Debug.assert(0x0 <= codePoint && codePoint <= 0x10FFFF);
-
-        if (codePoint <= 65535) {
-            return String.fromCharCode(codePoint);
-        }
-
-        const codeUnit1 = Math.floor((codePoint - 65536) / 1024) + 0xD800;
-        const codeUnit2 = ((codePoint - 65536) % 1024) + 0xDC00;
-
-        return String.fromCharCode(codeUnit1, codeUnit2);
     }
 
     // Current character is known to be a backslash. Check for Unicode escape of the form '\uXXXX'
