@@ -526,3 +526,8 @@ export interface TextRange {
 export interface FileReference extends TextRange {
     fileName: string;
 }
+
+export const enum LanguageVersion {
+    Solidity_0_4,
+    Solidity_0_5,
+}

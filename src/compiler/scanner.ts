@@ -1,6 +1,7 @@
 import { Debug, binarySearch, createMapFromTemplate } from "./core";
 import {
     CharacterCodes,
+    LanguageVersion,
     LineAndCharacter,
     Map,
     NumericLiteralFlags,
@@ -34,6 +35,7 @@ export interface Scanner {
     setText(text: string, start?: number, length?: number): void;
     setOnError(onError: ErrorCallback): void;
     setTextPos(textPos: number): void;
+    setLanguageVersion(version: LanguageVersion): void;
 }
 
 const textToToken = createMapFromTemplate({
@@ -399,6 +401,7 @@ export function isIdentifierText(name: string): boolean {
 
 // Creates a scanner over a (possibly unspecified) range of a piece of text.
 export function createScanner(skipTrivia: boolean,
+    languageVersion = LanguageVersion.Solidity_0_4,
     text?: string,
     onError?: ErrorCallback,
     start?: number,
@@ -440,6 +443,7 @@ export function createScanner(skipTrivia: boolean,
         scan,
         getText,
         setText,
+        setLanguageVersion,
         setOnError,
         setTextPos,
     };
@@ -1062,6 +1066,11 @@ export function createScanner(skipTrivia: boolean,
 
     function setOnError(errorCallback: ErrorCallback) {
         onError = errorCallback;
+    }
+
+
+    function setLanguageVersion(version: LanguageVersion) {
+        languageVersion = version;
     }
 
     function setTextPos(textPos: number) {
