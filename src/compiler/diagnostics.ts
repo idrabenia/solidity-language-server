@@ -3,14 +3,27 @@ import {
     DiagnosticSeverity
 } from "vscode-languageserver";
 
-export function solcErrToDiagnostic(error: string): Diagnostic {
-    const errorSegments = error.split(":");
+export interface SolcError {
+    sourceLocation?: {
+        file: string;
+        start: number;
+        end: number;
+    };
+    type: string;
+    component: string;
+    severity: "error" | "warning";
+    message: string;
+    formattedMessage?: string;
+}
+
+export function solcErrToDiagnostic(error: SolcError): Diagnostic {
+    const { message, formattedMessage, severity } = error;
+    const errorSegments = formattedMessage.split(":");
     const line = parseInt(errorSegments[1]);
     const column = parseInt(errorSegments[2]);
-    const severity = getDiagnosticSeverity(errorSegments[3]);
 
     return {
-        message: error,
+        message,
         range: {
             start: {
                 line: line - 1,
@@ -21,15 +34,15 @@ export function solcErrToDiagnostic(error: string): Diagnostic {
                 character: column
             },
         },
-        severity
+        severity: getDiagnosticSeverity(severity)
     };
 }
 
-function getDiagnosticSeverity(severity: string): DiagnosticSeverity {
+function getDiagnosticSeverity(severity: "error" | "warning"): DiagnosticSeverity {
     switch (severity) {
-        case " Error":
+        case "error":
             return DiagnosticSeverity.Error;
-        case " Warning":
+        case "warning":
             return DiagnosticSeverity.Warning;
         default:
             return DiagnosticSeverity.Error;

@@ -3,7 +3,7 @@ import { Diagnostic, DiagnosticSeverity, Range } from "vscode-languageserver";
 import * as core from "./core";
 import { arrayFrom, flatMap, getDirectoryPath, getRootLength, memoize, returnFalse, sortAndDeduplicateDiagnostics } from "./core";
 import { Debug, createMap, forEach, getNormalizedAbsolutePath, normalizePath } from "./core";
-import { solcErrToDiagnostic, soliumErrObjectToDiagnostic } from "./diagnostics";
+import { SolcError, solcErrToDiagnostic, soliumErrObjectToDiagnostic } from "./diagnostics";
 import { createModuleResolutionCache, resolveModuleName } from "./moduleNameResolver";
 import { sys } from "./sys";
 import { CompilerHost, CompilerOptions, HasInvalidatedResolution, PackageId, Path, Program, SourceFile } from "./types";
@@ -315,7 +315,7 @@ export function createProgram(rootNames: ReadonlyArray<string>, options: Compile
             const result = solc.compileStandard(JSON.stringify(solcStandardInput));
             const standardOutput = JSON.parse(result);
             const errors = standardOutput.errors || [];
-            return errors.map((error: any) => solcErrToDiagnostic(error.formattedMessage));
+            return errors.map((error: SolcError) => solcErrToDiagnostic(error));
         }
     }
 
