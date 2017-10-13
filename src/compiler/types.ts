@@ -310,6 +310,7 @@ export interface Program extends ScriptReferenceHost {
 }
 
 export interface CompilerOptions {
+    remappings?: ReadonlyArray<string>;
     optimizer?: {
         enabled: boolean;
     };

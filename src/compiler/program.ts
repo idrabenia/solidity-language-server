@@ -296,6 +296,7 @@ export function createProgram(rootNames: ReadonlyArray<string>, options: Compile
                 sources,
                 settings: {
                     optimizer: options.optimizer,
+                    remappings: options.remappings,
                     outputSelection: {
                         "*": {
                             "*": [
