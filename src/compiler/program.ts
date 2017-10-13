@@ -283,7 +283,8 @@ export function createProgram(rootNames: ReadonlyArray<string>, options: Compile
                 sourceFile.resolvedModules.forEach(resolved => {
                     if (resolved) {
                         const sourceFile = program.getSourceFileByPath(toPath(resolved.resolvedFileName));
-                        input[sourceFile.fileName] = { content: sourceFile.text };
+                        const moduleName = resolved.packageId ? `${resolved.packageId.name}/${resolved.packageId.subModuleName}` : sourceFile.fileName;
+                        input[moduleName] = { content: sourceFile.text };
                         collectSources(sourceFile);
                     }
                 });

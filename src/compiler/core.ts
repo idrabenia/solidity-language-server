@@ -983,6 +983,23 @@ export function filter<T>(array: T[], f: (x: T) => boolean): T[] {
     return array;
 }
 
+export function dropWhile<T>(array: T[], f: (x: T) => boolean): T[] {
+    let result: T[];
+    let drop = true;
+    if (array) {
+        result = [];
+        for (let i = 0; i < array.length; i++) {
+            if (drop && !f(array[i])) {
+                drop = false;
+            }
+            if (!drop) {
+                result.push(array[i]);
+            }
+        }
+    }
+    return result;
+}
+
 /** Shims `Array.from`. */
 export function arrayFrom<T, U>(iterator: Iterator<T>, map: (t: T) => U): U[];
 export function arrayFrom<T>(iterator: Iterator<T>): T[];

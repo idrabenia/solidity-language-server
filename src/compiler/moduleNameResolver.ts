@@ -7,7 +7,7 @@ import {
     isExternalModuleNameRelative,
     toPath
 } from "./core";
-import { getBaseFileName, normalizePath, normalizePathAndParts, normalizeSlashes, pathEndsWithDirectorySeparator } from "./core";
+import { dropWhile, getBaseFileName, normalizePath, normalizePathAndParts, normalizeSlashes, pathEndsWithDirectorySeparator } from "./core";
 import { PackageId } from "./types";
 import {
     CompilerOptions,
@@ -258,7 +258,17 @@ function solidityModuleNameResolverWorker(moduleName: string, containingDirector
             const { path: candidate, parts } = normalizePathAndParts(combinePaths(containingDirectory, moduleName));
             const resolved = solidityLoadModuleByRelativeName(candidate, failedLookupLocations, /*onlyRecordFailures*/ false, state);
             // Treat explicit "node_modules" import as an external library import.
-            return resolved && toSearchResult({ resolved, isExternalLibraryImport: contains(parts, "node_modules") });
+            const isExternalLibraryImport = contains(parts, "node_modules");
+            if (isExternalLibraryImport) {
+                const [, packageName, ...rest] = dropWhile(parts, part => part !== "node_modules");
+                resolved.packageId = {
+                    name: packageName,
+                    subModuleName: rest.join("/"),
+                    version: ""
+                };
+            }
+
+            return resolved && toSearchResult({ resolved, isExternalLibraryImport });
         }
     }
 }
