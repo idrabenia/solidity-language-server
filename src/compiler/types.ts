@@ -310,7 +310,9 @@ export interface Program extends ScriptReferenceHost {
 }
 
 export interface CompilerOptions {
-    optimize: boolean;
+    optimizer?: {
+        enabled: boolean;
+    };
 }
 
 export interface ModuleResolutionHost {

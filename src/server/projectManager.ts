@@ -97,7 +97,9 @@ export class ProjectManager {
         const trimmedRootPath = this.rootPath.replace(/\/+$/, "");
         const solidityConfig: SolidityConfig = {
             compilerOptions: {
-                optimize: true
+                optimizer: {
+                    enabled: true
+                }
             },
             include: ["**/*.sol"]
         };

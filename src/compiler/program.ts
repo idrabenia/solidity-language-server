@@ -295,9 +295,7 @@ export function createProgram(rootNames: ReadonlyArray<string>, options: Compile
                 language: "Solidity",
                 sources,
                 settings: {
-                    optimizer: {
-                        enabled: options.optimize
-                    },
+                    optimizer: options.optimizer,
                     outputSelection: {
                         "*": {
                             "*": [
