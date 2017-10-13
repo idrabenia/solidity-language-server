@@ -296,7 +296,7 @@ export function createProgram(rootNames: ReadonlyArray<string>, options: Compile
                 sources,
                 settings: {
                     optimizer: {
-                        enabled: true
+                        enabled: options.optimize
                     },
                     outputSelection: {
                         "*": {
