@@ -273,28 +273,49 @@ export function createProgram(rootNames: ReadonlyArray<string>, options: Compile
     }
 
     function getCompilerDiagnosticsForFile(sourceFile: SourceFile): ReadonlyArray<Diagnostic> {
-        const input = { [sourceFile.fileName]: sourceFile.text };
+        const input = { [sourceFile.fileName]: { content: sourceFile.text } };
         collectSources(sourceFile);
 
-        const output = compileContracts({ sources: input });
-        if (!output.errors) return [];
-        return output.errors.map(solcErrToDiagnostic);
+        return compileContracts(input);
 
         function collectSources(sourceFile: SourceFile) {
             if (sourceFile.resolvedModules) {
                 sourceFile.resolvedModules.forEach(resolved => {
                     if (resolved) {
                         const sourceFile = program.getSourceFileByPath(toPath(resolved.resolvedFileName));
-                        input[sourceFile.fileName] = sourceFile.text;
+                        input[sourceFile.fileName] = { content: sourceFile.text };
                         collectSources(sourceFile);
                     }
                 });
             }
         }
 
-        function compileContracts(sources: any): { errors: string[] } {
-            // Setting 1 as second paramater activates the optimiser
-            return solc.compile(sources, 1);
+        function compileContracts(sources: { [path: string]: { content: string } }): ReadonlyArray<Diagnostic> {
+            const solcStandardInput = {
+                language: "Solidity",
+                sources,
+                settings: {
+                    optimizer: {
+                        enabled: true
+                    },
+                    outputSelection: {
+                        "*": {
+                            "*": [
+                                "abi",
+                                "ast",
+                                "evm.bytecode.object",
+                                "evm.bytecode.sourceMap",
+                                "evm.deployedBytecode.object",
+                                "evm.deployedBytecode.sourceMap"
+                            ]
+                        },
+                    }
+                }
+            };
+            const result = solc.compileStandard(JSON.stringify(solcStandardInput));
+            const standardOutput = JSON.parse(result);
+            const errors = standardOutput.errors || [];
+            return errors.map((error: any) => solcErrToDiagnostic(error.formattedMessage));
         }
     }
 
