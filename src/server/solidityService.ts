@@ -104,7 +104,7 @@ export class SolidityService {
                 documentSymbolProvider: false,
                 workspaceSymbolProvider: false,
                 completionProvider: {
-                    resolveProvider: true,
+                    resolveProvider: false,
                     triggerCharacters: ["."]
                 },
                 codeActionProvider: false,
