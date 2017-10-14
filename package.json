@@ -2,7 +2,7 @@
   "name": "solidity-language-server",
   "description": "A language server for Solidity language",
   "displayName": "Solidity Language Support",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "license": "Apache-2.0",
   "publisher": "kodebox",
   "engines": {
