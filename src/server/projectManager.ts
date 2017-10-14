@@ -2,7 +2,7 @@ import { Observable } from "@reactivex/rxjs";
 import * as glob from "glob";
 import iterate from "iterare";
 
-import { flatMap, isPackageJsonFile, isSolidityFile, noop } from "../compiler/core";
+import { flatMap, isEthPmJsonFile, isPackageJsonFile, isSolidityFile, noop } from "../compiler/core";
 import { resolveModuleName } from "../compiler/moduleNameResolver";
 import { CompilerOptions, Program } from "../compiler/types";
 import { preProcessFile } from "../services/preProcess";
@@ -242,7 +242,7 @@ export class ProjectManager {
             this.ensuredModuleStructure = this.updater.ensureStructure()
                 // Ensure content of all all global .d.ts, [tj]sconfig.json, package.json files
                 .concat(Observable.defer(() => observableFromIterable(this.inMemoryFs.uris())))
-                .filter(uri => isPackageJsonFile(uri))
+                .filter(uri => isPackageJsonFile(uri) || isEthPmJsonFile(uri))
                 .mergeMap(uri => this.updater.ensure(uri))
                 .do(noop, (_err: any) => {
                     this.ensuredModuleStructure = undefined;

@@ -804,6 +804,12 @@ export function isPackageJsonFile(filename: string): boolean {
     return packageJsonPattern.test(filename);
 }
 
+const ethPmJsonPattern = /(^|\/)ethpm\.json$/;
+
+export function isEthPmJsonFile(filename: string): boolean {
+    return ethPmJsonPattern.test(filename);
+}
+
 // The global Map object. This may not be available, so we must test for it.
 declare const Map: { new <T>(): Map<T> } | undefined;
 

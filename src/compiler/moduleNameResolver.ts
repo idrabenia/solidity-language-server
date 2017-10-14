@@ -34,6 +34,15 @@ interface PackageJson {
     main?: string;
 }
 
+interface EthPmJson {
+    package_name: string;
+    version: string;
+    description?: string;
+    authors?: string[];
+    keywords?: string[];
+    license?: string;
+}
+
 /** Array that is only intended to be pushed to, never read. */
 export interface Push<T> {
     push(value: T): void;
@@ -42,6 +51,7 @@ export interface Push<T> {
 interface ModuleResolutionState {
     host: ModuleResolutionHost;
     compilerOptions: CompilerOptions;
+    moduleDirectoryName?: string;
 }
 
 export interface PerModuleNameCache {
@@ -236,12 +246,16 @@ function realPath(path: string, host: ModuleResolutionHost): string {
 
 function solidityModuleNameResolverWorker(moduleName: string, containingDirectory: string, compilerOptions: CompilerOptions, host: ModuleResolutionHost, cache: ModuleResolutionCache | undefined): ResolvedModuleWithFailedLookupLocations {
     const failedLookupLocations: string[] = [];
-    const state: ModuleResolutionState = { compilerOptions, host };
+    let state: ModuleResolutionState;
 
-    const result = tryResolve();
-    if (result && result.value) {
-        const { resolved, isExternalLibraryImport } = result.value;
-        return createResolvedModuleWithFailedLookupLocations(resolved, isExternalLibraryImport, failedLookupLocations);
+    const moduleDirectoryNames = ["node_modules", "installed_contracts"];
+    for (const moduleDirectoryName of moduleDirectoryNames) {
+        state = { compilerOptions, host, moduleDirectoryName };
+        const result = tryResolve();
+        if (result && result.value) {
+            const { resolved, isExternalLibraryImport } = result.value;
+            return createResolvedModuleWithFailedLookupLocations(resolved, isExternalLibraryImport, failedLookupLocations);
+        }
     }
     return { resolvedModule: undefined, failedLookupLocations };
 
@@ -257,15 +271,20 @@ function solidityModuleNameResolverWorker(moduleName: string, containingDirector
         } else {
             const { path: candidate, parts } = normalizePathAndParts(combinePaths(containingDirectory, moduleName));
             const resolved = solidityLoadModuleByRelativeName(candidate, failedLookupLocations, /*onlyRecordFailures*/ false, state);
-            // Treat explicit "node_modules" import as an external library import.
-            const isExternalLibraryImport = contains(parts, "node_modules");
-            if (isExternalLibraryImport) {
-                const [, packageName, ...rest] = dropWhile(parts, part => part !== "node_modules");
-                resolved.packageId = {
-                    name: packageName,
-                    subModuleName: rest.join("/"),
-                    version: ""
-                };
+
+            // Treat explicit "node_modules" or "installed_contracts" import as an external library import.
+            let isExternalLibraryImport = false;
+            for (const moduleDirectoryName of moduleDirectoryNames) {
+                if (contains(parts, moduleDirectoryName)) {
+                    isExternalLibraryImport = true;
+                    const [, packageName, ...rest] = dropWhile(parts, part => part !== moduleDirectoryName);
+                    resolved.packageId = {
+                        name: packageName,
+                        subModuleName: rest.join("/"),
+                        version: ""
+                    };
+                    break;
+                }
             }
 
             return resolved && toSearchResult({ resolved, isExternalLibraryImport });
@@ -280,7 +299,7 @@ function loadModuleFromNodeModules(moduleName: string, directory: string, failed
 function loadModuleFromNodeModulesWorker(moduleName: string, directory: string, failedLookupLocations: Push<string>, state: ModuleResolutionState, cache: NonRelativeModuleNameResolutionCache): SearchResult<Resolved> {
     const perModuleNameCache = cache && cache.getOrCreateCacheForModuleName(moduleName);
     return forEachAncestorDirectory(normalizeSlashes(directory), ancestorDirectory => {
-        if (getBaseFileName(ancestorDirectory) !== "node_modules") {
+        if (getBaseFileName(ancestorDirectory) !== state.moduleDirectoryName) {
             const resolutionFromCache = tryFindNonRelativeModuleNameInCache(perModuleNameCache, moduleName, ancestorDirectory, state.host);
             if (resolutionFromCache) {
                 return resolutionFromCache;
@@ -299,7 +318,7 @@ function tryFindNonRelativeModuleNameInCache(cache: PerModuleNameCache | undefin
 
 /** Load a module from a single node_modules directory, but not from any ancestors' node_modules directories. */
 function loadModuleFromNodeModulesOneLevel(moduleName: string, directory: string, failedLookupLocations: Push<string>, state: ModuleResolutionState): Resolved | undefined {
-    const nodeModulesFolder = combinePaths(directory, "node_modules");
+    const nodeModulesFolder = combinePaths(directory, state.moduleDirectoryName);
     const nodeModulesFolderExists = directoryProbablyExists(nodeModulesFolder, state.host);
 
     const packageResult = loadModuleFromNodeModulesFolder(moduleName, nodeModulesFolder, nodeModulesFolderExists, failedLookupLocations, state);
@@ -311,7 +330,14 @@ function loadModuleFromNodeModulesOneLevel(moduleName: string, directory: string
 function loadModuleFromNodeModulesFolder(moduleName: string, nodeModulesFolder: string, nodeModulesFolderExists: boolean, failedLookupLocations: Push<string>, state: ModuleResolutionState): Resolved | undefined {
     const { packageName, rest } = getPackageName(moduleName);
     const packageRootPath = combinePaths(nodeModulesFolder, packageName);
-    const { packageId } = getPackageJsonInfo(packageRootPath, rest, failedLookupLocations, !nodeModulesFolderExists, state);
+    let packageId: PackageId;
+    if (state.moduleDirectoryName === "node_modules") {
+        const jsonInfo = getPackageJsonInfo(packageRootPath, rest, failedLookupLocations, !nodeModulesFolderExists, state);
+        packageId = jsonInfo.packageId;
+    } else if (state.moduleDirectoryName === "installed_contracts") {
+        const jsonInfo = getEthPmJsonInfo(packageRootPath, rest, failedLookupLocations, !nodeModulesFolderExists, state);
+        packageId = jsonInfo.packageId;
+    }
     const candidate = normalizePath(combinePaths(nodeModulesFolder, moduleName));
     const pathAndExtension = loadModuleFromFile(candidate, failedLookupLocations, !nodeModulesFolderExists, state);
     return withPackageId(packageId, pathAndExtension);
@@ -323,6 +349,33 @@ function getPackageName(moduleName: string): { packageName: string, rest: string
         idx = moduleName.indexOf(directorySeparator, idx + 1);
     }
     return idx === -1 ? { packageName: moduleName, rest: "" } : { packageName: moduleName.slice(0, idx), rest: moduleName.slice(idx + 1) };
+}
+
+function pathToEthPmJson(directory: string): string {
+    return combinePaths(directory, "ethpm.json");
+}
+
+function getEthPmJsonInfo(
+    nodeModuleDirectory: string,
+    subModuleName: string,
+    failedLookupLocations: Push<string>,
+    onlyRecordFailures: boolean,
+    { host }: ModuleResolutionState,
+): { ethPmJsonContent: EthPmJson | undefined, packageId: PackageId | undefined } {
+    const directoryExists = !onlyRecordFailures && directoryProbablyExists(nodeModuleDirectory, host);
+    const ethPmJsonPath = pathToEthPmJson(nodeModuleDirectory);
+    if (directoryExists && host.fileExists(ethPmJsonPath)) {
+        const ethPmJsonContent = readJson<EthPmJson>(ethPmJsonPath, host);
+        const packageId: PackageId = typeof ethPmJsonContent.package_name === "string" && typeof ethPmJsonContent.version === "string"
+            ? { name: ethPmJsonContent.package_name, subModuleName, version: ethPmJsonContent.version }
+            : undefined;
+        return { ethPmJsonContent, packageId };
+    }
+    else {
+        // record package json as one of failed lookup locations - in the future if this file will appear it will invalidate resolution results
+        failedLookupLocations.push(ethPmJsonPath);
+        return { ethPmJsonContent: undefined, packageId: undefined };
+    }
 }
 
 function pathToPackageJson(directory: string): string {
@@ -339,7 +392,7 @@ function getPackageJsonInfo(
     const directoryExists = !onlyRecordFailures && directoryProbablyExists(nodeModuleDirectory, host);
     const packageJsonPath = pathToPackageJson(nodeModuleDirectory);
     if (directoryExists && host.fileExists(packageJsonPath)) {
-        const packageJsonContent = readJson(packageJsonPath, host);
+        const packageJsonContent = readJson<PackageJson>(packageJsonPath, host);
         const packageId: PackageId = typeof packageJsonContent.name === "string" && typeof packageJsonContent.version === "string"
             ? { name: packageJsonContent.name, subModuleName, version: packageJsonContent.version }
             : undefined;
@@ -352,14 +405,14 @@ function getPackageJsonInfo(
     }
 }
 
-function readJson(path: string, host: ModuleResolutionHost): PackageJson {
+function readJson<T>(path: string, host: ModuleResolutionHost): T {
     try {
         const jsonText = host.readFile(path);
         return jsonText ? JSON.parse(jsonText) : {};
     }
     catch (e) {
         // gracefully handle if readFile fails or returns not JSON
-        return {};
+        return {} as T;
     }
 }
 
