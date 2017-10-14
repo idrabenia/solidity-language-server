@@ -1,7 +1,7 @@
 {
   "name": "solidity-language-server",
   "description": "A language server for Solidity language",
-  "displayName": "solidity-language-server",
+  "displayName": "Solidity Language Support",
   "version": "0.1.0",
   "license": "Apache-2.0",
   "publisher": "Kodebox",
