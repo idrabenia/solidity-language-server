@@ -238,7 +238,7 @@ class HostCache {
 export function getDefaultCompilerOptions(): CompilerOptions {
     return {
         optimizer: {
-            enabled: true
+            enabled: false
         }
     };
 }

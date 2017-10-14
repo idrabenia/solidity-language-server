@@ -98,7 +98,7 @@ export class ProjectManager {
         const solidityConfig: SolidityConfig = {
             compilerOptions: {
                 optimizer: {
-                    enabled: true
+                    enabled: false
                 }
             },
             include: ["**/*.sol"]
