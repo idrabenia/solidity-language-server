@@ -99,16 +99,16 @@ export class SolidityService {
                 signatureHelpProvider: {
                     triggerCharacters: ["(", ","]
                 },
-                definitionProvider: true,
-                referencesProvider: true,
-                documentSymbolProvider: true,
-                workspaceSymbolProvider: true,
+                definitionProvider: false,
+                referencesProvider: false,
+                documentSymbolProvider: false,
+                workspaceSymbolProvider: false,
                 completionProvider: {
                     resolveProvider: true,
                     triggerCharacters: ["."]
                 },
                 codeActionProvider: false,
-                renameProvider: true,
+                renameProvider: false,
                 executeCommandProvider: {
                     commands: []
                 }
