@@ -19,6 +19,7 @@
     // then only files with supported extensions are included
     // (e.g. .ts, .tsx, and .d.ts by default with .js and .jsx if allowJs is set to true).
     "include": [
-        "./src/**/*"
+        "./src/**/*",
+        "./test/**/*"
     ]
 }

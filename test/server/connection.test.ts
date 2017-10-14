@@ -8,9 +8,9 @@ import {
     StreamMessageWriter
 } from "vscode-languageserver";
 
-import { MessageEmitter, MessageWriter, registerLanguageHandler } from "../connection";
-import { NoopLogger } from "../logging";
-import { SolidityService } from "../solidityService";
+import { MessageEmitter, MessageWriter, registerLanguageHandler } from "../../src/server/connection";
+import { NoopLogger } from "../../src/server/logging";
+import { SolidityService } from "../../src/server/solidityService";
 
 describe("connection", () => {
     describe("registerLanguageHandler()", () => {

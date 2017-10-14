@@ -4,8 +4,8 @@ import * as fs from "mz/fs";
 import * as rimraf from "rimraf";
 import * as temp from "temp";
 
-import { LocalFileSystem } from "../fs";
-import { path2uri } from "../utilities";
+import { LocalFileSystem } from "../../src/server/fs";
+import { path2uri } from "../../src/server/utilities";
 
 describe("fs.ts", () => {
     describe("LocalFileSystem", () => {
