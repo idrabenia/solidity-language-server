@@ -12,17 +12,10 @@
     "Languages"
   ],
   "activationEvents": [
-    "onLanguage:solidity",
-    "onCommand:extension.sayHello"
+    "onLanguage:solidity"
   ],
   "main": "./out/src/extension",
   "contributes": {
-    "commands": [
-      {
-        "command": "extension.sayHello",
-        "title": "Hello World"
-      }
-    ],
     "languages": [
       {
         "id": "solidity",
