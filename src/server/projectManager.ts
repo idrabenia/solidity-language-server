@@ -603,7 +603,7 @@ export class ProjectConfiguration {
             return;
         }
         const configObject = this.configContent;
-        this.expectedFilePaths = new Set(flatMap(configObject.include, pattern => glob.sync(pattern)));
+        this.expectedFilePaths = new Set(flatMap(configObject.include, pattern => glob.sync(pattern, { cwd: this.rootFilePath })));
 
         this.host = new InMemoryLanguageServiceHost(
             this.fs.path,
