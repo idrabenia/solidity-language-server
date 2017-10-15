@@ -14,7 +14,7 @@ import {
 } from "vscode-languageserver";
 
 import { soliumDefaultRules } from "../compiler/program";
-import { FileSystem, FileSystemUpdater, LocalFileSystem, RemoteFileSystem } from "./fs";
+import { FileSystemUpdater, LocalFileSystem, RemoteFileSystem } from "./fs";
 import { LanguageClient } from "./languageClient";
 import { LSPLogger, Logger } from "./logging";
 import { InMemoryFileSystem } from "./memfs";
@@ -47,20 +47,7 @@ export class SolidityService {
 
     protected logger: Logger;
 
-    /**
-     * The remote (or local), asynchronous, file system to fetch files from
-     */
-    protected fileSystem: FileSystem;
-
-    /**
-     * Holds file contents and workspace structure in memory
-     */
-    protected inMemoryFileSystem: InMemoryFileSystem;
-
-    /**
-     * Syncs the remote file system with the in-memory file system
-     */
-    protected updater: FileSystemUpdater;
+    protected accessDisk: boolean;
 
     /**
      * Settings synced though `didChangeConfiguration`
@@ -82,14 +69,9 @@ export class SolidityService {
             if (!this.rootUri.endsWith("/")) {
                 this.rootUri += "/";
             }
-            this._initializeFileSystems(!(params.capabilities.xcontentProvider && params.capabilities.xfilesProvider));
-            this.updater = new FileSystemUpdater(this.fileSystem, this.inMemoryFileSystem);
-            this.projectManager = new ProjectManager(
-                this.root,
-                this.inMemoryFileSystem,
-                this.updater,
-                this.logger
-            );
+
+            this.accessDisk = !(params.capabilities.xcontentProvider && params.capabilities.xfilesProvider);
+            this.projectManager = this._createProjectManager({ root: this.root, rootUri: this.rootUri });
         }
         const result: InitializeResult = {
             capabilities: {
@@ -120,6 +102,27 @@ export class SolidityService {
             value: result
         } as Operation);
     }
+    /*
+     * Creates a new ProjectManager for the given path.
+     *
+     * @param rootPath the root path
+     * @param accessDisk Whether the language server is allowed to access the local file system
+     */
+    private _createProjectManager(params: { root: string, rootUri: string }): ProjectManager {
+        // The remote (or local), asynchronous, file system to fetch files from
+        const fileSystem = this.accessDisk ? new LocalFileSystem(params.rootUri) : new RemoteFileSystem(this.client);
+        // Holds file contents and workspace structure in memory
+        const inMemoryFileSystem = new InMemoryFileSystem(params.root, this.logger);
+        // Syncs the remote file system with the in-memory file system
+        const updater = new FileSystemUpdater(fileSystem, inMemoryFileSystem);
+
+        return new ProjectManager(
+            params.root,
+            inMemoryFileSystem,
+            updater,
+            this.logger
+        );
+    }
 
     /**
      * The initialized notification is sent from the client to the server after the client received the
@@ -129,17 +132,6 @@ export class SolidityService {
      */
     public async initialized(): Promise<void> {
         // No op.
-    }
-
-    /**
-     * Initializes the remote file system and in-memory file system.
-     * Can be overridden
-     *
-     * @param accessDisk Whether the language server is allowed to access the local file system
-     */
-    protected _initializeFileSystems(accessDisk: boolean): void {
-        this.fileSystem = accessDisk ? new LocalFileSystem(this.rootUri) : new RemoteFileSystem(this.client);
-        this.inMemoryFileSystem = new InMemoryFileSystem(this.root, this.logger);
     }
 
     /**
