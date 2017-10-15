@@ -13,6 +13,7 @@ import {
     TextDocumentSyncKind
 } from "vscode-languageserver";
 
+import { getDirectoryPath } from "../compiler/core";
 import { soliumDefaultRules } from "../compiler/program";
 import { FileSystemUpdater, LocalFileSystem, RemoteFileSystem } from "./fs";
 import { LanguageClient } from "./languageClient";
@@ -33,7 +34,9 @@ export interface Settings {
 }
 
 export class SolidityService {
-    public projectManager: ProjectManager;
+    private globalProjectManager: ProjectManager;
+
+    private perDirectoryProjectManagerCache: Map<string, ProjectManager>;
 
     /**
      * The rootPath as passed to `initialize` or converted from `rootUri`
@@ -61,6 +64,8 @@ export class SolidityService {
     }
 
     public initialize(params: InitializeParams): Observable<Operation> {
+        this.accessDisk = !(params.capabilities.xcontentProvider && params.capabilities.xfilesProvider);
+
         if (params.rootUri || params.rootPath) {
             this.root = params.rootPath || uri2path(params.rootUri!);
             this.rootUri = params.rootUri || path2uri(params.rootPath!);
@@ -70,9 +75,11 @@ export class SolidityService {
                 this.rootUri += "/";
             }
 
-            this.accessDisk = !(params.capabilities.xcontentProvider && params.capabilities.xfilesProvider);
-            this.projectManager = this._createProjectManager({ root: this.root, rootUri: this.rootUri });
+            this.globalProjectManager = this._createProjectManager({ root: this.root, rootUri: this.rootUri });
+        } else {
+            this.perDirectoryProjectManagerCache = new Map<string, ProjectManager>();
         }
+
         const result: InitializeResult = {
             capabilities: {
                 // Tell the client that the server works in FULL text document sync mode
@@ -124,6 +131,21 @@ export class SolidityService {
         );
     }
 
+    private getProjectManager(uri: string): ProjectManager {
+        const path = uri2path(uri);
+
+        // If the root path is set, return the global ProjectManager.
+        if (this.root) return this.globalProjectManager;
+
+        const root = getDirectoryPath(path);
+        let projectManager = this.perDirectoryProjectManagerCache.get(root);
+        if (!projectManager) {
+            projectManager = this._createProjectManager({ root, rootUri: path2uri(root) });
+            this.perDirectoryProjectManagerCache.set(root, projectManager);
+        }
+        return projectManager;
+    }
+
     /**
      * The initialized notification is sent from the client to the server after the client received the
      * result of the initialize request but before the client is sending any other request or notification
@@ -162,8 +184,9 @@ export class SolidityService {
         const uri = normalizeUri(params.textDocument.uri);
         const text = params.textDocument.text;
         // Ensure files needed for most operations are fetched
-        await this.projectManager.ensureReferencedFiles(uri).toPromise();
-        this.projectManager.didOpen(uri, text);
+        const projectManager = this.getProjectManager(uri);
+        await projectManager.ensureReferencedFiles(uri).toPromise();
+        projectManager.didOpen(uri, text);
         await new Promise(resolve => setTimeout(resolve, 200));
         this._publishDiagnostics(uri);
     }
@@ -185,7 +208,7 @@ export class SolidityService {
         if (!text) {
             return;
         }
-        this.projectManager.didChange(uri, text);
+        this.getProjectManager(uri).didChange(uri, text);
         await new Promise(resolve => setTimeout(resolve, 200));
         this._publishDiagnostics(uri);
     }
@@ -196,8 +219,9 @@ export class SolidityService {
      */
     public async textDocumentDidSave(params: DidSaveTextDocumentParams): Promise<void> {
         const uri = normalizeUri(params.textDocument.uri);
-        await this.projectManager.ensureReferencedFiles(uri).toPromise();
-        this.projectManager.didSave(uri);
+        const projectManager = this.getProjectManager(uri);
+        await projectManager.ensureReferencedFiles(uri).toPromise();
+        projectManager.didSave(uri);
     }
 
     /**
@@ -209,9 +233,10 @@ export class SolidityService {
         const uri = normalizeUri(params.textDocument.uri);
 
         // Ensure files needed to suggest completions are fetched
-        await this.projectManager.ensureReferencedFiles(uri).toPromise();
+        const projectManager = this.getProjectManager(uri);
+        await projectManager.ensureReferencedFiles(uri).toPromise();
 
-        this.projectManager.didClose(uri);
+        projectManager.didClose(uri);
 
         // Clear diagnostics
         this.client.textDocumentPublishDiagnostics({ uri, diagnostics: [] });
@@ -223,7 +248,7 @@ export class SolidityService {
      * @param uri URI of the file to check
      */
     private _publishDiagnostics(uri: string): void {
-        const config = this.projectManager.getParentConfiguration(uri);
+        const config = this.getProjectManager(uri).getParentConfiguration(uri);
         if (!config) {
             return;
         }
@@ -250,13 +275,14 @@ export class SolidityService {
     public textDocumentCompletion(params: TextDocumentPositionParams): Observable<Operation> {
         const uri = normalizeUri(params.textDocument.uri);
 
+        const projectManager = this.getProjectManager(uri);
         // Ensure files needed to suggest completions are fetched
-        return this.projectManager.ensureReferencedFiles(uri, undefined, undefined)
+        return projectManager.ensureReferencedFiles(uri, undefined, undefined)
             .toArray()
             .mergeMap(() => {
                 const fileName: string = uri2path(uri);
 
-                const configuration = this.projectManager.getConfiguration(fileName);
+                const configuration = projectManager.getConfiguration(fileName);
                 configuration.ensureConfigFile();
 
                 const completions = configuration.getService().getCompletionsAtPosition(fileName, params.position);
