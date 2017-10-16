@@ -9,7 +9,8 @@
     "vscode": "^1.16.0"
   },
   "categories": [
-    "Languages"
+    "Languages",
+    "Snippets"
   ],
   "activationEvents": [
     "onLanguage:solidity"
@@ -27,6 +28,12 @@
           ".sol"
         ],
         "configuration": "./solidity.configuration.json"
+      }
+    ],
+    "snippets": [
+      {
+        "language": "solidity",
+        "path": "./snippets/solidity.json"
       }
     ],
     "grammars": [
