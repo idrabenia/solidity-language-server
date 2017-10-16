@@ -30,6 +30,10 @@ export interface SolidityServiceOptions {
  * Settings synced through `didChangeConfiguration`
  */
 export interface Settings {
+    solidity: SoliditySettings;
+}
+
+interface SoliditySettings {
     soliumRules: any;
 }
 
@@ -68,7 +72,9 @@ export class SolidityService {
      * Settings synced though `didChangeConfiguration`
      */
     protected settings: Settings = {
-        soliumRules: soliumDefaultRules
+        solidity: {
+            soliumRules: soliumDefaultRules
+        }
     };
 
     constructor(protected client: LanguageClient, protected options: SolidityServiceOptions = {}) {
@@ -265,7 +271,7 @@ export class SolidityService {
             return;
         }
         const fileName = uri2path(uri);
-        const diagnostics = config.getService().getCompilerDiagnostics(fileName).concat(config.getService().getLinterDiagnostics(fileName, this.settings.soliumRules));
+        const diagnostics = config.getService().getCompilerDiagnostics(fileName).concat(config.getService().getLinterDiagnostics(fileName, this.settings.solidity.soliumRules));
         this.client.textDocumentPublishDiagnostics({ uri, diagnostics });
     }
 
