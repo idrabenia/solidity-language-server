@@ -33,6 +33,18 @@ export interface Settings {
     soliumRules: any;
 }
 
+/**
+ * Handles incoming requests and return responses. There is a one-to-one-to-one
+ * correspondence between TCP connection, SolidityService instance, and
+ * language workspace. SolidityService caches data from the compiler across
+ * requests. The lifetime of the SolidityService instance is tied to the
+ * lifetime of the TCP connection, so its caches are deleted after the
+ * connection is torn down.
+ *
+ * Methods are camelCase versions of the LSP spec methods and dynamically
+ * dispatched. Methods not to be exposed over JSON RPC are prefixed with an
+ * underscore.
+ */
 export class SolidityService {
     private globalProjectManager: ProjectManager;
 
