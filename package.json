@@ -54,7 +54,14 @@
           "default": false,
           "description": "Enables optimizer"
         },
-        "solidity.soliumRules": {
+        "solidity.solium.enabled": {
+          "type": [
+            "boolean"
+          ],
+          "default": true,
+          "description": "Enables solium linting"
+        },
+        "solidity.solium.rules": {
           "type": [
             "object"
           ],

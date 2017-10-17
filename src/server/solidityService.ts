@@ -36,7 +36,10 @@ export interface Settings {
 }
 
 interface SoliditySettings {
-    soliumRules: any;
+    solium: {
+        enabled: boolean;
+        rules: any;
+    };
     compilerOptions: CompilerOptions;
 }
 
@@ -76,7 +79,10 @@ export class SolidityService {
      */
     protected settings: Settings = {
         solidity: {
-            soliumRules: soliumDefaultRules,
+            solium: {
+                enabled: true,
+                rules: soliumDefaultRules
+            },
             compilerOptions: getDefaultCompilerOptions()
         }
     };
@@ -276,7 +282,12 @@ export class SolidityService {
             return;
         }
         const fileName = uri2path(uri);
-        const diagnostics = config.getService().getCompilerDiagnostics(fileName).concat(config.getService().getLinterDiagnostics(fileName, this.settings.solidity.soliumRules));
+        const diagnostics = config.getService().getCompilerDiagnostics(fileName);
+        if (this.settings.solidity.solium.enabled) {
+            const linterDiagnostics = config.getService().getLinterDiagnostics(fileName, this.settings.solidity.solium.rules);
+            diagnostics.push(...linterDiagnostics);
+        }
+
         this.client.textDocumentPublishDiagnostics({ uri, diagnostics });
     }
 
