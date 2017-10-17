@@ -8,6 +8,12 @@
   "engines": {
     "vscode": "^1.16.0"
   },
+  "keywords": [
+    "solidity",
+    "ethereum",
+    "blockchain",
+    "compiler"
+  ],
   "categories": [
     "Languages",
     "Snippets",
