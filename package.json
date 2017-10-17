@@ -21,6 +21,32 @@
       "type": "object",
       "title": "Solidity configuration",
       "properties": {
+        "solidity.compilerOptions.remappings": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "title": "Compiler remappings",
+            "properties": {
+              "prefix": {
+                "type": "string",
+                "description": "The prefix to remap"
+              },
+              "path": {
+                "type": "string",
+                "description": "The path to remap the prefix to"
+              }
+            }
+          },
+          "default": [],
+          "description": "Compiler remappings"
+        },
+        "solidity.compilerOptions.optimizer.enabled": {
+          "type": [
+            "boolean"
+          ],
+          "default": false,
+          "description": "Enables optimizer"
+        },
         "solidity.soliumRules": {
           "type": [
             "object"

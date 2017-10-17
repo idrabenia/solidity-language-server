@@ -87,6 +87,7 @@ export class ProjectManager {
         rootPath: string,
         inMemoryFileSystem: InMemoryFileSystem,
         updater: FileSystemUpdater,
+        compilerOptions: CompilerOptions,
         protected logger: Logger = new NoopLogger()
     ) {
         this.rootPath = rootPath;
@@ -96,11 +97,7 @@ export class ProjectManager {
 
         const trimmedRootPath = this.rootPath.replace(/\/+$/, "");
         const solidityConfig: SolidityConfig = {
-            compilerOptions: {
-                optimizer: {
-                    enabled: false
-                }
-            },
+            compilerOptions,
             include: ["**/*.sol"]
         };
         const config = new ProjectConfiguration(

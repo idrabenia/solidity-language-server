@@ -15,6 +15,8 @@ import {
 
 import { getDirectoryPath } from "../compiler/core";
 import { soliumDefaultRules } from "../compiler/program";
+import { CompilerOptions } from "../compiler/types";
+import { getDefaultCompilerOptions } from "../services/services";
 import { FileSystemUpdater, LocalFileSystem, RemoteFileSystem } from "./fs";
 import { LanguageClient } from "./languageClient";
 import { LSPLogger, Logger } from "./logging";
@@ -35,6 +37,7 @@ export interface Settings {
 
 interface SoliditySettings {
     soliumRules: any;
+    compilerOptions: CompilerOptions;
 }
 
 /**
@@ -73,7 +76,8 @@ export class SolidityService {
      */
     protected settings: Settings = {
         solidity: {
-            soliumRules: soliumDefaultRules
+            soliumRules: soliumDefaultRules,
+            compilerOptions: getDefaultCompilerOptions()
         }
     };
 
@@ -145,6 +149,7 @@ export class SolidityService {
             params.root,
             inMemoryFileSystem,
             updater,
+            this.settings.solidity.compilerOptions,
             this.logger
         );
     }
