@@ -14,7 +14,6 @@ import {
 } from "vscode-languageserver";
 
 import { getDirectoryPath } from "../compiler/core";
-import { soliumDefaultRules } from "../compiler/program";
 import { CompilerOptions } from "../compiler/types";
 import { getDefaultCompilerOptions } from "../services/services";
 import { FileSystemUpdater, LocalFileSystem, RemoteFileSystem } from "./fs";
@@ -42,6 +41,26 @@ interface SoliditySettings {
     };
     compilerOptions: CompilerOptions;
 }
+
+const defaultSoliumRules = {
+    "array-declarations": true,
+    "blank-lines": false,
+    "camelcase": true,
+    "deprecated-suicide": true,
+    "double-quotes": true,
+    "imports-on-top": true,
+    "indentation": false,
+    "lbrace": true,
+    "mixedcase": true,
+    "no-empty-blocks": true,
+    "no-unused-vars": true,
+    "no-with": true,
+    "operator-whitespace": true,
+    "pragma-on-top": true,
+    "uppercase": true,
+    "variable-declarations": true,
+    "whitespace": true
+};
 
 /**
  * Handles incoming requests and return responses. There is a one-to-one-to-one
@@ -81,7 +100,7 @@ export class SolidityService {
         solidity: {
             solium: {
                 enabled: true,
-                rules: soliumDefaultRules
+                rules: defaultSoliumRules
             },
             compilerOptions: getDefaultCompilerOptions()
         }

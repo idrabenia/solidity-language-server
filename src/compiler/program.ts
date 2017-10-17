@@ -255,7 +255,7 @@ export function createProgram(rootNames: ReadonlyArray<string>, options: Compile
 
     function getDiagnosticsHelper(
         sourceFile: SourceFile,
-        getDiagnostics: (sourceFile: SourceFile) => ReadonlyArray<Diagnostic>, ...rest: any[]): ReadonlyArray<Diagnostic> {
+        getDiagnostics: (sourceFile: SourceFile, ...rest: any[]) => ReadonlyArray<Diagnostic>, ...rest: any[]): ReadonlyArray<Diagnostic> {
         if (sourceFile) {
             return getDiagnostics(sourceFile, ...rest);
         }
@@ -319,9 +319,9 @@ export function createProgram(rootNames: ReadonlyArray<string>, options: Compile
         }
     }
 
-    function getLinterDiagnosticsForFile(sourceFile: SourceFile): ReadonlyArray<Diagnostic> {
+    function getLinterDiagnosticsForFile(sourceFile: SourceFile, soliumRules: any): ReadonlyArray<Diagnostic> {
         try {
-            const errorObjects = Solium.lint(sourceFile.text, { rules: soliumDefaultRules });
+            const errorObjects = Solium.lint(sourceFile.text, { rules: soliumRules });
             return errorObjects.map(soliumErrObjectToDiagnostic);
         } catch (err) {
             const match = /An error .*?\nSyntaxError: (.*?) Line: (\d+), Column: (\d+)/.exec(err.message);
@@ -496,23 +496,3 @@ export function getDiagnostics(program: Program, sourceFile: SourceFile): Diagno
 
     return diagnostics;
 }
-
-export const soliumDefaultRules = {
-    "array-declarations": true,
-    "blank-lines": false,
-    "camelcase": true,
-    "deprecated-suicide": true,
-    "double-quotes": true,
-    "imports-on-top": true,
-    "indentation": false,
-    "lbrace": true,
-    "mixedcase": true,
-    "no-empty-blocks": true,
-    "no-unused-vars": true,
-    "no-with": true,
-    "operator-whitespace": true,
-    "pragma-on-top": true,
-    "uppercase": true,
-    "variable-declarations": true,
-    "whitespace": true
-};

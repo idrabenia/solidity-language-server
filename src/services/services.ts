@@ -14,7 +14,7 @@ import {
     toPath
 } from "../compiler/core";
 import { directoryProbablyExists } from "../compiler/moduleNameResolver";
-import { createProgram, createSourceFile, isProgramUptoDate, soliumDefaultRules } from "../compiler/program";
+import { createProgram, createSourceFile, isProgramUptoDate } from "../compiler/program";
 import {
     CompilerHost,
     CompilerOptions,
@@ -148,7 +148,7 @@ export function createLanguageService(host: LanguageServiceHost): LanguageServic
         return program.getCompilerDiagnostics(getValidSourceFile(fileName)).slice();
     }
 
-    function getLinterDiagnostics(fileName: string, soliumRules = soliumDefaultRules): Diagnostic[] {
+    function getLinterDiagnostics(fileName: string, soliumRules: any): Diagnostic[] {
         synchronizeHostData();
 
         return program.getLinterDiagnostics(getValidSourceFile(fileName), soliumRules).slice();
