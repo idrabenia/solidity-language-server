@@ -10,7 +10,8 @@
   },
   "categories": [
     "Languages",
-    "Snippets"
+    "Snippets",
+    "Linters"
   ],
   "activationEvents": [
     "onLanguage:solidity"
