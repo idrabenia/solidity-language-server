@@ -487,12 +487,3 @@ export function isProgramUptoDate(
             hasInvalidatedResolution(sourceFile.path);
     }
 }
-
-export function getDiagnostics(program: Program, sourceFile: SourceFile): Diagnostic[] {
-    const diagnostics = [
-        ...program.getCompilerDiagnostics(sourceFile),
-        ...program.getLinterDiagnostics(sourceFile)
-    ];
-
-    return diagnostics;
-}
