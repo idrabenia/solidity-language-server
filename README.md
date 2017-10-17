@@ -7,6 +7,9 @@ This project aims to be the universal interface to a growing number of Solidity 
 
 solidity-language-server is a language server for Solidity that adheres to the [Language Server Protocol (LSP)][lsp].
 
+# Demo
+![Screenshot](screenshots/autocomplete-demo.gif)
+
 # Features
 - [x] It uses LSP, so it should be easy to integrate with a wide selection of editors and IDEs
 - [x] Diagnostics via [Solium][solium] and [solc][solc] warnings/errors
