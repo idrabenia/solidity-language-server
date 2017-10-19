@@ -1,6 +1,8 @@
 Solidity Language Server
 ========================
 
+[![](https://vsmarketplacebadge.apphb.com/version/kodebox.solidity-language-server.svg)](https://marketplace.visualstudio.com/items?itemName=kodebox.solidity-language-server)
+
 **Warning: This project is in the alpha stage of development. Use at your own risk.**
 
 This project aims to be the universal interface to a growing number of Solidity tools, providing a full-featured and easy to query backend for editors and IDEs that require Solidity specific functionality.
