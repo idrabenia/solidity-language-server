@@ -3,7 +3,7 @@ import { Diagnostic, DiagnosticSeverity, Range } from "vscode-languageserver";
 import * as core from "./core";
 import { arrayFrom, flatMap, getDirectoryPath, getRootLength, memoize, returnFalse, sortAndDeduplicateDiagnostics } from "./core";
 import { Debug, createMap, forEach, getNormalizedAbsolutePath, normalizePath } from "./core";
-import { SolcError, solcErrToDiagnostic, soliumErrObjectToDiagnostic } from "./diagnostics";
+import { SolcError, solcErrToDiagnostic, solhintErrObjectToDiagnostic, soliumErrObjectToDiagnostic } from "./diagnostics";
 import { createModuleResolutionCache, resolveModuleName } from "./moduleNameResolver";
 import { sys } from "./sys";
 import { CompilerHost, CompilerOptions, HasInvalidatedResolution, PackageId, Path, Program, SourceFile } from "./types";
@@ -12,6 +12,7 @@ import { compareDataObjects, emptyArray, setResolvedModule } from "./utilities";
 const solparse = require("solparse");
 const solc = require("solc");
 const Solium = require("solium");
+const Solhint = require("solhint/lib");
 
 /**
  * Create a new 'Program' instance. A Program is an immutable collection of 'SourceFile's and a 'CompilerOptions'
@@ -70,6 +71,7 @@ export function createProgram(rootNames: ReadonlyArray<string>, options: Compile
         getMissingFilePaths: () => missingFilePaths,
         getCompilerDiagnostics,
         getSoliumDiagnostics,
+        getSolhintDiagnostics,
         getCompilerOptions: () => options,
         getCurrentDirectory: () => currentDirectory,
         getFileProcessingDiagnostics: () => fileProcessingDiagnostics,
@@ -272,6 +274,10 @@ export function createProgram(rootNames: ReadonlyArray<string>, options: Compile
         return getDiagnosticsHelper(sourceFile, getSoliumDiagnosticsForFile, soliumRules);
     }
 
+    function getSolhintDiagnostics(sourceFile: SourceFile, soliumRules: any): ReadonlyArray<Diagnostic> {
+        return getDiagnosticsHelper(sourceFile, getSolhintDiagnosticsForFile, soliumRules);
+    }
+
     function getCompilerDiagnosticsForFile(sourceFile: SourceFile): ReadonlyArray<Diagnostic> {
         const input = { [sourceFile.fileName]: { content: sourceFile.text } };
         collectSources(sourceFile);
@@ -344,6 +350,11 @@ export function createProgram(rootNames: ReadonlyArray<string>, options: Compile
                 },
             ];
         }
+    }
+
+    function getSolhintDiagnosticsForFile(sourceFile: SourceFile, solhintRules: any): ReadonlyArray<Diagnostic> {
+        const errorObjects = Solhint.processStr(sourceFile.text, solhintRules).messages;
+        return errorObjects.map(solhintErrObjectToDiagnostic);
     }
 }
 

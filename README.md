@@ -14,7 +14,7 @@ solidity-language-server is a language server for Solidity that adheres to the [
 
 # Features
 - [x] It uses LSP, so it should be easy to integrate with a wide selection of editors and IDEs
-- [x] Diagnostics via [Solium][solium] and [solc][solc] warnings/errors
+- [x] Diagnostics via [solc][solc], [Solium][solium] and [Solhint][solhint] warnings/errors
 - [x] Auto completion
 
 - [ ] Code actions and quick fixes
@@ -49,6 +49,7 @@ In general, all contributions will be done using [GitHub’s pull request model]
 
 [lsp]: https://github.com/Microsoft/language-server-protocol
 [solium]: https://github.com/duaraghav8/Solium
+[solhint]: https://github.com/protofire/solhint
 [solc]: https://github.com/ethereum/solc-js
 [vscode]: https://code.visualstudio.com/download
 [pr]: https://help.github.com/articles/about-pull-requests/

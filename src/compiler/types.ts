@@ -298,6 +298,7 @@ export interface Program extends ScriptReferenceHost {
 
     getCompilerDiagnostics(sourceFile?: SourceFile): ReadonlyArray<Diagnostic>;
     getSoliumDiagnostics(sourceFile?: SourceFile, soliumRules?: any): ReadonlyArray<Diagnostic>;
+    getSolhintDiagnostics(sourceFile?: SourceFile, solhintRules?: any): ReadonlyArray<Diagnostic>;
 
     /* @internal */ getFileProcessingDiagnostics(): Diagnostic[];
 

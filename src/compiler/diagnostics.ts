@@ -62,3 +62,18 @@ export function soliumErrObjectToDiagnostic(errObject: any): Diagnostic {
         severity,
     };
 }
+
+export function solhintErrObjectToDiagnostic(errObject: any): Diagnostic {
+    const line = errObject.line - 1;
+    const character = errObject.column - 1;
+    const severity = (errObject.severity === 3) ? DiagnosticSeverity.Warning : DiagnosticSeverity.Error;
+
+    return {
+        message: `${errObject.message} [${errObject.ruleId}]`,
+        range: {
+            start: { line, character },
+            end: { line, character: character + 1 },
+        },
+        severity
+    };
+}

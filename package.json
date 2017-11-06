@@ -85,35 +85,43 @@
             "whitespace": true
           },
           "description": "Solium linting rules"
+        },
+        "solidity.solhint.enabled": {
+          "type": [
+            "boolean"
+          ],
+          "default": true,
+          "description": "Enables solhint linting"
+        },
+        "solidity.solhint.rules": {
+          "type": [
+            "object"
+          ],
+          "default": {},
+          "description": "Solhint linting rules"
         }
       }
     },
-    "languages": [
-      {
-        "id": "solidity",
-        "aliases": [
-          "Solidity",
-          "solidity"
-        ],
-        "extensions": [
-          ".sol"
-        ],
-        "configuration": "./solidity.configuration.json"
-      }
-    ],
-    "snippets": [
-      {
-        "language": "solidity",
-        "path": "./snippets/solidity.json"
-      }
-    ],
-    "grammars": [
-      {
-        "language": "solidity",
-        "scopeName": "source.solidity",
-        "path": "./syntaxes/solidity.json"
-      }
-    ]
+    "languages": [{
+      "id": "solidity",
+      "aliases": [
+        "Solidity",
+        "solidity"
+      ],
+      "extensions": [
+        ".sol"
+      ],
+      "configuration": "./solidity.configuration.json"
+    }],
+    "snippets": [{
+      "language": "solidity",
+      "path": "./snippets/solidity.json"
+    }],
+    "grammars": [{
+      "language": "solidity",
+      "scopeName": "source.solidity",
+      "path": "./syntaxes/solidity.json"
+    }]
   },
   "icon": "images/icon.png",
   "repository": {
@@ -185,6 +193,7 @@
     "nodemon": "^1.12.1",
     "semaphore-async-await": "^1.5.1",
     "solc": "^0.4.16",
+    "solhint": "^1.1.7",
     "solium": "^0.5.5",
     "solparse": "^1.2.7",
     "vscode": "^1.1.5",

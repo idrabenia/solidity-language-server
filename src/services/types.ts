@@ -14,6 +14,7 @@ export interface LanguageService {
     getCompletionsAtPosition(fileName: string, position: Position): CompletionItem[];
     getCompilerDiagnostics(fileName: string): Diagnostic[];
     getSoliumDiagnostics(fileName: string, soliumRules?: any): Diagnostic[];
+    getSolhintDiagnostics(fileName: string, solhintRules: any): Diagnostic[];
 
     getProgram(): Program;
 }
