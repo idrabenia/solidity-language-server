@@ -69,7 +69,7 @@ export function createProgram(rootNames: ReadonlyArray<string>, options: Compile
         getSourceFiles: () => files,
         getMissingFilePaths: () => missingFilePaths,
         getCompilerDiagnostics,
-        getLinterDiagnostics,
+        getSoliumDiagnostics,
         getCompilerOptions: () => options,
         getCurrentDirectory: () => currentDirectory,
         getFileProcessingDiagnostics: () => fileProcessingDiagnostics,
@@ -268,8 +268,8 @@ export function createProgram(rootNames: ReadonlyArray<string>, options: Compile
         return getDiagnosticsHelper(sourceFile, getCompilerDiagnosticsForFile);
     }
 
-    function getLinterDiagnostics(sourceFile: SourceFile, soliumRules: any): ReadonlyArray<Diagnostic> {
-        return getDiagnosticsHelper(sourceFile, getLinterDiagnosticsForFile, soliumRules);
+    function getSoliumDiagnostics(sourceFile: SourceFile, soliumRules: any): ReadonlyArray<Diagnostic> {
+        return getDiagnosticsHelper(sourceFile, getSoliumDiagnosticsForFile, soliumRules);
     }
 
     function getCompilerDiagnosticsForFile(sourceFile: SourceFile): ReadonlyArray<Diagnostic> {
@@ -319,7 +319,7 @@ export function createProgram(rootNames: ReadonlyArray<string>, options: Compile
         }
     }
 
-    function getLinterDiagnosticsForFile(sourceFile: SourceFile, soliumRules: any): ReadonlyArray<Diagnostic> {
+    function getSoliumDiagnosticsForFile(sourceFile: SourceFile, soliumRules: any): ReadonlyArray<Diagnostic> {
         try {
             const errorObjects = Solium.lint(sourceFile.text, { rules: soliumRules });
             return errorObjects.map(soliumErrObjectToDiagnostic);

@@ -303,8 +303,8 @@ export class SolidityService {
         const fileName = uri2path(uri);
         const diagnostics = config.getService().getCompilerDiagnostics(fileName);
         if (this.settings.solidity.solium.enabled) {
-            const linterDiagnostics = config.getService().getLinterDiagnostics(fileName, this.settings.solidity.solium.rules);
-            diagnostics.push(...linterDiagnostics);
+            const soliumDiagnostics = config.getService().getSoliumDiagnostics(fileName, this.settings.solidity.solium.rules);
+            diagnostics.push(...soliumDiagnostics);
         }
 
         this.client.textDocumentPublishDiagnostics({ uri, diagnostics });

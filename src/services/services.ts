@@ -148,17 +148,17 @@ export function createLanguageService(host: LanguageServiceHost): LanguageServic
         return program.getCompilerDiagnostics(getValidSourceFile(fileName)).slice();
     }
 
-    function getLinterDiagnostics(fileName: string, soliumRules: any): Diagnostic[] {
+    function getSoliumDiagnostics(fileName: string, soliumRules: any): Diagnostic[] {
         synchronizeHostData();
 
-        return program.getLinterDiagnostics(getValidSourceFile(fileName), soliumRules).slice();
+        return program.getSoliumDiagnostics(getValidSourceFile(fileName), soliumRules).slice();
     }
 
     return {
         getProgram,
         getCompletionsAtPosition,
         getCompilerDiagnostics,
-        getLinterDiagnostics
+        getSoliumDiagnostics
     };
 }
 
