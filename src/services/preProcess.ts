@@ -1,22 +1,24 @@
-import { FileReference, SyntaxKind } from "../compiler/types";
+import { CharStream, Scanner, TokenName } from "language-solidity";
+
+import { FileReference } from "../compiler/types";
 import { PreProcessedFileInfo } from "./types";
-import { scanner } from "./utilities";
 
 export function preProcessFile(sourceText: string): PreProcessedFileInfo {
+    const scanner = new Scanner(new CharStream(sourceText));
     const importedFiles: FileReference[] = [];
 
-    function nextToken() {
-        return scanner.scan();
+    function nextToken(): TokenName {
+        return scanner.next();
     }
 
-    function tokenText() {
-        return scanner.getTokenText();
+    function tokenText(): string {
+        return scanner.currentLiteral;
     }
 
     function getFileReference() {
-        const fileName = scanner.getTokenValue();
-        const pos = scanner.getTokenPos();
-        return { fileName, pos, end: pos + fileName.length };
+        const fileName = scanner.currentLiteral;
+        const pos = scanner.currentLocation;
+        return { fileName, pos: pos.start, end: pos.end };
     }
 
     function recordModuleName() {
@@ -27,43 +29,43 @@ export function preProcessFile(sourceText: string): PreProcessedFileInfo {
      * Returns true if at least one token was consumed from the stream
      */
     function tryConsumeImport(): boolean {
-        let token = scanner.getToken();
-        if (token === SyntaxKind.ImportKeyword) {
+        let token = scanner.currentToken;
+        if (token === TokenName.Import) {
             token = nextToken();
-            if (token === SyntaxKind.StringLiteral) {
+            if (token === TokenName.StringLiteral) {
                 // import "mod";
                 recordModuleName();
                 return true;
             }
             else {
-                if (token === SyntaxKind.OpenBraceToken) {
+                if (token === TokenName.LBrace) {
                     token = nextToken();
                     // consume "{ a as B, c, d as D}" clauses
                     // make sure that it stops on EOF
-                    while (token !== SyntaxKind.CloseBraceToken && token !== SyntaxKind.EndOfFileToken) {
+                    while (token !== TokenName.RBrace && token !== TokenName.EOS) {
                         token = nextToken();
                     }
 
-                    if (token === SyntaxKind.CloseBraceToken) {
+                    if (token === TokenName.RBrace) {
                         token = nextToken();
-                        if (token === SyntaxKind.StringLiteral && tokenText() === "from") {
+                        if (token === TokenName.StringLiteral && tokenText() === "from") {
                             token = nextToken();
-                            if (token === SyntaxKind.StringLiteral) {
+                            if (token === TokenName.StringLiteral) {
                                 // import {a as A} from "mod";
                                 recordModuleName();
                             }
                         }
                     }
                 }
-                else if (token === SyntaxKind.AsteriskToken) {
+                else if (token === TokenName.Mul) {
                     token = nextToken();
-                    if (token === SyntaxKind.AsKeyword) {
+                    if (token === TokenName.As) {
                         token = nextToken();
-                        if (token === SyntaxKind.Identifier) {
+                        if (token === TokenName.Identifier) {
                             token = nextToken();
-                            if (token === SyntaxKind.StringLiteral && tokenText() === "from") {
+                            if (token === TokenName.StringLiteral && tokenText() === "from") {
                                 token = nextToken();
-                                if (token === SyntaxKind.StringLiteral) {
+                                if (token === TokenName.StringLiteral) {
                                     // import * as NS from "mod"
                                     recordModuleName();
                                 }
@@ -80,7 +82,7 @@ export function preProcessFile(sourceText: string): PreProcessedFileInfo {
     }
 
     function processImports(): void {
-        scanner.setText(sourceText);
+        scanner.resetSource(new CharStream(sourceText), "");
         nextToken();
         // Look for:
         //    import "mod";
@@ -88,7 +90,7 @@ export function preProcessFile(sourceText: string): PreProcessedFileInfo {
         //    import * as NS  from "mod"
 
         while (true) {
-            if (scanner.getToken() === SyntaxKind.EndOfFileToken) {
+            if (scanner.currentToken === TokenName.EOS) {
                 break;
             }
 
@@ -100,7 +102,7 @@ export function preProcessFile(sourceText: string): PreProcessedFileInfo {
             }
         }
 
-        scanner.setText(undefined);
+        scanner.reset();
     }
 
     processImports();

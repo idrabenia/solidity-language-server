@@ -2497,6 +2497,10 @@ klaw@^1.0.0:
   optionalDependencies:
     graceful-fs "^4.1.9"
 
+language-solidity@^0.4.18-alpha:
+  version "0.4.18-alpha"
+  resolved "https://registry.yarnpkg.com/language-solidity/-/language-solidity-0.4.18-alpha.tgz#ee728b9a921d3b5de39987588ddeae5d0a8f2b51"
+
 latest-version@^3.0.0:
   version "3.1.0"
   resolved "http://dev.kodebox.io:4873/latest-version/-/latest-version-3.1.0.tgz#a205383fea322b33b5ae3b18abee0dc2f356ee15"
