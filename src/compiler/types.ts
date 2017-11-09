@@ -115,9 +115,9 @@ export interface Program extends ScriptReferenceHost {
     /* @internal */
     getMissingFilePaths(): ReadonlyArray<Path>;
 
-    getCompilerDiagnostics(sourceFile?: SourceFile): ReadonlyArray<Diagnostic>;
-    getSoliumDiagnostics(sourceFile?: SourceFile, soliumRules?: any): ReadonlyArray<Diagnostic>;
-    getSolhintDiagnostics(sourceFile?: SourceFile, solhintRules?: any): ReadonlyArray<Diagnostic>;
+    getCompilerDiagnostics(sourceFile?: SourceFile, cancellationToken?: CancellationToken): ReadonlyArray<Diagnostic>;
+    getSoliumDiagnostics(sourceFile?: SourceFile, cancellationToken?: CancellationToken, soliumRules?: any): ReadonlyArray<Diagnostic>;
+    getSolhintDiagnostics(sourceFile?: SourceFile, cancellationToken?: CancellationToken, solhintRules?: any): ReadonlyArray<Diagnostic>;
 
     /* @internal */ getFileProcessingDiagnostics(): Diagnostic[];
 
@@ -153,6 +153,7 @@ export interface ModuleResolutionHost {
 export interface CompilerHost extends ModuleResolutionHost {
     getSourceFile(fileName: string, onError?: (message: string) => void, shouldCreateNewSourceFile?: boolean): SourceFile | undefined;
     getSourceFileByPath?(fileName: string, path: Path, onError?: (message: string) => void, shouldCreateNewSourceFile?: boolean): SourceFile | undefined;
+    getCancellationToken?(): CancellationToken;
     getCanonicalFileName(fileName: string): string;
 
     useCaseSensitiveFileNames(): boolean;
@@ -353,4 +354,13 @@ export interface FileReference extends TextRange {
 export const enum LanguageVersion {
     Solidity_0_4,
     Solidity_0_5,
+}
+
+export class OperationCanceledException { }
+
+export interface CancellationToken {
+    isCancellationRequested(): boolean;
+
+    /** @throws OperationCanceledException if isCancellationRequested is true */
+    throwIfCancellationRequested(): void;
 }

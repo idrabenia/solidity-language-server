@@ -19,6 +19,10 @@ export interface LanguageService {
     getProgram(): Program;
 }
 
+export interface HostCancellationToken {
+    isCancellationRequested(): boolean;
+}
+
 //
 // Public interface of the host of a language service instance.
 //
@@ -28,6 +32,7 @@ export interface LanguageServiceHost {
     getProjectVersion?(): string;
     getScriptFileNames(): string[];
     getScriptVersion(fileName: string): string;
+    getCancellationToken?(): HostCancellationToken;
     getCurrentDirectory(): string;
     log?(s: string): void;
     trace?(s: string): void;

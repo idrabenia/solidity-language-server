@@ -24,14 +24,17 @@ import {
     Program,
     SourceFile
 } from "../compiler/types";
+import { CancellationToken, OperationCanceledException } from "../compiler/types";
 import * as completions from "./completions";
-import { LanguageService, LanguageServiceHost } from "./types";
+import { HostCancellationToken, LanguageService, LanguageServiceHost } from "./types";
 
 export function createLanguageService(host: LanguageServiceHost): LanguageService {
     let program: Program;
     let lastProjectVersion: string;
 
     const useCaseSensitivefileNames = host.useCaseSensitiveFileNames && host.useCaseSensitiveFileNames();
+    const cancellationToken = new CancellationTokenObject(host.getCancellationToken && host.getCancellationToken());
+
     const getCanonicalFileName = createGetCanonicalFileName(useCaseSensitivefileNames);
     const currentDirectory = host.getCurrentDirectory();
 
@@ -72,6 +75,7 @@ export function createLanguageService(host: LanguageServiceHost): LanguageServic
         const compilerHost: CompilerHost = {
             getSourceFile: getOrCreateSourceFile,
             getSourceFileByPath: getOrCreateSourceFileByPath,
+            getCancellationToken: () => cancellationToken,
             getCanonicalFileName,
             useCaseSensitiveFileNames: () => useCaseSensitivefileNames,
             getCurrentDirectory: () => currentDirectory,
@@ -145,19 +149,19 @@ export function createLanguageService(host: LanguageServiceHost): LanguageServic
     function getCompilerDiagnostics(fileName: string): Diagnostic[] {
         synchronizeHostData();
 
-        return program.getCompilerDiagnostics(getValidSourceFile(fileName)).slice();
+        return program.getCompilerDiagnostics(getValidSourceFile(fileName), cancellationToken).slice();
     }
 
     function getSoliumDiagnostics(fileName: string, soliumRules: any): Diagnostic[] {
         synchronizeHostData();
 
-        return program.getSoliumDiagnostics(getValidSourceFile(fileName), soliumRules).slice();
+        return program.getSoliumDiagnostics(getValidSourceFile(fileName), cancellationToken, soliumRules).slice();
     }
 
     function getSolhintDiagnostics(fileName: string, soliumRules: any): Diagnostic[] {
         synchronizeHostData();
 
-        return program.getSolhintDiagnostics(getValidSourceFile(fileName), soliumRules).slice();
+        return program.getSolhintDiagnostics(getValidSourceFile(fileName), cancellationToken, soliumRules).slice();
     }
 
     return {
@@ -167,6 +171,21 @@ export function createLanguageService(host: LanguageServiceHost): LanguageServic
         getSoliumDiagnostics,
         getSolhintDiagnostics
     };
+}
+
+class CancellationTokenObject implements CancellationToken {
+    constructor(private cancellationToken: HostCancellationToken) {
+    }
+
+    public isCancellationRequested() {
+        return this.cancellationToken && this.cancellationToken.isCancellationRequested();
+    }
+
+    public throwIfCancellationRequested(): void {
+        if (this.isCancellationRequested()) {
+            throw new OperationCanceledException();
+        }
+    }
 }
 
 // Information about a specific host file.

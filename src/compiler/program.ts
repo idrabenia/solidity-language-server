@@ -6,7 +6,7 @@ import { Debug, createMap, forEach, getNormalizedAbsolutePath, normalizePath } f
 import { SolcError, solcErrToDiagnostic, solhintErrObjectToDiagnostic, soliumErrObjectToDiagnostic } from "./diagnostics";
 import { createModuleResolutionCache, resolveModuleName } from "./moduleNameResolver";
 import { sys } from "./sys";
-import { CompilerHost, CompilerOptions, HasInvalidatedResolution, PackageId, Path, Program, SourceFile } from "./types";
+import { CancellationToken, CompilerHost, CompilerOptions, HasInvalidatedResolution, PackageId, Path, Program, SourceFile } from "./types";
 import { compareDataObjects, emptyArray, setResolvedModule } from "./utilities";
 
 const solparse = require("solparse");
@@ -257,25 +257,28 @@ export function createProgram(rootNames: ReadonlyArray<string>, options: Compile
 
     function getDiagnosticsHelper(
         sourceFile: SourceFile,
-        getDiagnostics: (sourceFile: SourceFile, ...rest: any[]) => ReadonlyArray<Diagnostic>, ...rest: any[]): ReadonlyArray<Diagnostic> {
+        getDiagnostics: (sourceFile: SourceFile, cancellationToken: CancellationToken, ...rest: any[]) => ReadonlyArray<Diagnostic>, cancellationToken: CancellationToken, ...rest: any[]): ReadonlyArray<Diagnostic> {
         if (sourceFile) {
-            return getDiagnostics(sourceFile, ...rest);
+            return getDiagnostics(sourceFile, cancellationToken, ...rest);
         }
         return sortAndDeduplicateDiagnostics(flatMap(program.getSourceFiles(), sourceFile => {
-            return getDiagnostics(sourceFile, ...rest);
+            if (cancellationToken) {
+                cancellationToken.throwIfCancellationRequested();
+            }
+            return getDiagnostics(sourceFile, cancellationToken, ...rest);
         }));
     }
 
-    function getCompilerDiagnostics(sourceFile: SourceFile): ReadonlyArray<Diagnostic> {
-        return getDiagnosticsHelper(sourceFile, getCompilerDiagnosticsForFile);
+    function getCompilerDiagnostics(sourceFile: SourceFile, cancellationToken: CancellationToken): ReadonlyArray<Diagnostic> {
+        return getDiagnosticsHelper(sourceFile, getCompilerDiagnosticsForFile, cancellationToken);
     }
 
-    function getSoliumDiagnostics(sourceFile: SourceFile, soliumRules: any): ReadonlyArray<Diagnostic> {
-        return getDiagnosticsHelper(sourceFile, getSoliumDiagnosticsForFile, soliumRules);
+    function getSoliumDiagnostics(sourceFile: SourceFile, cancellationToken: CancellationToken, soliumRules: any): ReadonlyArray<Diagnostic> {
+        return getDiagnosticsHelper(sourceFile, getSoliumDiagnosticsForFile, cancellationToken, soliumRules);
     }
 
-    function getSolhintDiagnostics(sourceFile: SourceFile, soliumRules: any): ReadonlyArray<Diagnostic> {
-        return getDiagnosticsHelper(sourceFile, getSolhintDiagnosticsForFile, soliumRules);
+    function getSolhintDiagnostics(sourceFile: SourceFile, cancellationToken: CancellationToken, solhintRules: any): ReadonlyArray<Diagnostic> {
+        return getDiagnosticsHelper(sourceFile, getSolhintDiagnosticsForFile, cancellationToken, solhintRules);
     }
 
     function getCompilerDiagnosticsForFile(sourceFile: SourceFile): ReadonlyArray<Diagnostic> {
